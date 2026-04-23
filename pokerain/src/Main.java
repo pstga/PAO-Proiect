@@ -23,7 +23,7 @@ public class Main {
         // cand voi avea db o sa am optiunea de a adauga traineri si chestii in plus :) 
 
         // adaugam mutari
-        Move focBlast = new Move("Foc Blast", 90, 85, 5, CreatureType.FIRE, MoveCategory.SPECIAL, StatusEffect.BURN);
+        Move focBlast = new Move("Fire Blast", 90, 85, 5, CreatureType.FIRE, MoveCategory.SPECIAL, StatusEffect.BURN);
         Move hydropump = new Move("Hydropump", 95, 80, 5, CreatureType.WATER, MoveCategory.SPECIAL, StatusEffect.NONE);
         Move thunderbolt = new Move("Thunderbolt", 80, 100, 15, CreatureType.ELECTRIC, MoveCategory.SPECIAL, StatusEffect.PARALYSIS);
         Move razorLeaf = new Move("Razor Leaf", 55, 95, 25, CreatureType.GRASS, MoveCategory.PHYSICAL, StatusEffect.NONE);
@@ -209,32 +209,20 @@ public class Main {
                 case 8:
                     System.out.println("\n== Wild Encounter ==");
                     System.out.print("Enter trainer name: ");
-                    String trainerName8 = scanner.nextLine();
-                    Trainer t8 = service.findTrainer(trainerName8);
-                    if (t8 == null) {
+                    String trainerName = scanner.nextLine();
+                    Trainer trainer = service.findTrainer(trainerName);
+                    if (trainer == null) {
                         System.out.println("Trainer not found!");
                         break;
                     }
-                    wildEevee.takeDamage(45);
-                    System.out.printf("  -> Eevee appeared! It looks weak (HP %d/%d)%n", wildEevee.getHp(), wildEevee.getMaxHp());
-                    BattleManager catchBattle = new BattleManager(t8, wildEevee);
-                    catchBattle.startBattle();
-                    System.out.print("Use Great Ball? (yes/no): ");
-                    String useBall = scanner.nextLine();
-                    if (useBall.equalsIgnoreCase("yes")) {
-                        boolean caught = catchBattle.tryCatch(greatBall);
-                        if (caught) {
-                            TrainerCreature newEevee = new TrainerCreature(
-                                    wildEevee.getName(), "Eevy",
-                                    wildEevee.getMaxHp(), wildEevee.getAttack(),
-                                    wildEevee.getDefense(), wildEevee.getSpeed(),
-                                    wildEevee.getLevel(), wildEevee.getType());
-                            newEevee.addMove(tackle);
-                            service.addCreatureToTrainer(t8, newEevee);
-                        }
-                    } else {
-                        System.out.println("You ran away.");
+
+                    WildCreature randomWild = service.getRandomWildCreature();
+                    if (randomWild == null) {
+                        System.out.println("No wild creatures are registered!");
+                        break;
                     }
+
+                    service.encounterWildCreature(trainer, randomWild, scanner);
                     break;
                 case 9:
                     running = false;

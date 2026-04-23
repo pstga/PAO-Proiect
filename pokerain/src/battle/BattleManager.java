@@ -94,11 +94,17 @@ public class BattleManager {
         return success;
     }
 
+    // 50% sansa sa scapi; daca nu reusesti, lupta continua
     public boolean tryFlee() {
-        System.out.println("  -> Escape successful!");
-        battleOver = true;
-        result = "FLEE";
-        return true;
+        if (rng.nextBoolean()) {
+            System.out.println("  -> Escape successful!");
+            battleOver = true;
+            result = "FLEE";
+            return true;
+        } else {
+            System.out.println("  -> Couldn't escape!");
+            return false;
+        }
     }
 
     private void checkBattleEnd() {

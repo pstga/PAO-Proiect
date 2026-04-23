@@ -93,12 +93,11 @@ public class Trainer {
         return used;
     }
 
-
-
     // getteri
     public String getName(){ return name; }
     public List<TrainerCreature> getParty(){ return party; }
     public Map<String, Integer>  getBag()   { return bag; }
+    public List<Item> getItemObjects() { return itemObjects; }
     public int getMoney() { return money; }
 
     public void addMoney(int amount) { money += amount; }

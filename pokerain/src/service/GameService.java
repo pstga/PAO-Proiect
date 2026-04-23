@@ -3,6 +3,9 @@ package service;
 import battle.BattleManager;
 import entities.*;
 import enums.CreatureType;
+import enums.StatusEffect;
+import items.Item;
+import items.Pokeball;
 
 import java.util.*;
 import java.util.stream.Collectors;
@@ -38,6 +41,7 @@ public class GameService {
     public void printCreaturesSortedByLevel(Trainer trainer) {
         System.out.printf("%n[SERVICE] %s's creatures (sorted by level):%n", trainer.getName());
         TreeSet<TrainerCreature> sorted = new TreeSet<>(trainer.getParty());
+        
         int i = 1;
         for (TrainerCreature c : sorted) {
             System.out.printf("  %d. %s%n", i++, c);
@@ -49,8 +53,8 @@ public class GameService {
         System.out.printf("%n[SERVICE] Searching for creature: '%s'...%n", name);
         for (Trainer t : trainerRanking) {
             for (TrainerCreature c : t.getParty()) {
-                if (c.getName().equalsIgnoreCase(name) || 
-                   (c.getNickname() != null && c.getNickname().equalsIgnoreCase(name))) {
+                if (c.getName().equalsIgnoreCase(name) ||
+                        (c.getNickname() != null && c.getNickname().equalsIgnoreCase(name))) {
                     System.out.printf("  -> Found at trainer '%s': %s%n", t.getName(), c);
                     return c;
                 }
@@ -78,7 +82,8 @@ public class GameService {
                 .filter(c -> c.getType() == type)
                 .collect(Collectors.toList());
         result.forEach(c -> System.out.println("  -> " + c));
-        if (result.isEmpty()) System.out.println("  (none)");
+        if (result.isEmpty())
+            System.out.println("  (none)");
         return result;
     }
 
@@ -126,9 +131,99 @@ public class GameService {
         System.out.printf("[SERVICE] Wild creature '%s' registered.%n", wc.getName());
     }
 
-    public void printWildRegistry() {
-        System.out.println("\n[SERVICE] == WILD CREATURE REGISTRY ==");
-        wildCreatureRegistry.values().forEach(wc -> System.out.println("  " + wc));
+    // returns a random wild creature from the registry (full HP reset)
+    public WildCreature getRandomWildCreature() {
+        if (wildCreatureRegistry.isEmpty()) return null;
+        List<WildCreature> pool = new ArrayList<>(wildCreatureRegistry.values());
+        WildCreature chosen = pool.get(new Random().nextInt(pool.size()));
+        chosen.heal(chosen.getMaxHp()); // reset HP for a fresh encounter
+        return chosen;
+    }
+
+    // wild pokemon encounter
+    public void encounterWildCreature(Trainer trainer, WildCreature wild, Scanner scanner) {
+        System.out.printf("%n[ENCOUNTER] A wild %s appeared!%n", wild.getDescription());
+        System.out.printf("  %s%n", wild);
+
+        TrainerCreature active = trainer.getActiveCreature();
+        if (active == null) {
+            System.out.println("  -> You have no healthy creatures to fight with!");
+            return;
+        }
+        System.out.printf("  -> %s sends out %s!%n%n", trainer.getName(), active.getNickname());
+
+        BattleManager bm = new BattleManager(trainer, wild);
+        bm.startBattle();
+
+        while (!bm.isBattleOver() && wild.isAlive() && !wild.isCaught()) {
+            System.out.printf("  [Wild] %s%n", wild);
+            System.out.printf("  [Your] %s%n", active);
+            System.out.println("    1. Attack");
+            System.out.println("    2. Throw Pokeball");
+            System.out.println("    3. Flee");
+            System.out.print("  Choice: ");
+
+            String input = scanner.nextLine().trim();
+            switch (input) {
+                case "1":
+                    bm.executeTurn(0);
+                    // dupa atac wild-ul poate incerca sa fuga
+                    if (!bm.isBattleOver() && wild.isAlive() && wild.tryFlee()) {
+                        System.out.printf("  -> The wild %s fled!%n", wild.getName());
+                    }
+                    break;
+
+                case "2":
+                    // incerc sa folosesc pokeball daca am 
+                    Pokeball ball = null;
+                    for (Map.Entry<String, Integer> e : trainer.getBag().entrySet()) {
+                        Item itm = trainer.getItemObjects().stream()
+                                .filter(i -> i.getName().equals(e.getKey()))
+                                .findFirst().orElse(null);
+                        if (itm instanceof Pokeball && e.getValue() > 0) {
+                            ball = (Pokeball) itm;
+                            break;
+                        }
+                    }
+                    if (ball == null) {
+                        System.out.println("  -> You have no Pokeballs left!");
+                        break;
+                    }
+                    // scadem din bag
+                    trainer.getBag().merge(ball.getName(), -1, Integer::sum);
+                    if (trainer.getBag().getOrDefault(ball.getName(), 0) <= 0)
+                        trainer.getBag().remove(ball.getName());
+
+                    if (bm.tryCatch(ball)) {
+                        TrainerCreature captured = new TrainerCreature(
+                                wild.getName(), null,
+                                wild.getMaxHp(), wild.getAttack(), wild.getDefense(),
+                                wild.getSpeed(), wild.getLevel(), wild.getType());
+                        captured.heal(wild.getHp());
+                        if (addCreatureToTrainer(trainer, captured))
+                            System.out.printf("  -> %s was added to %s's team!%n", wild.getName(), trainer.getName());
+                        else
+                            System.out.printf("  -> Team is full; %s was released.%n", wild.getName());
+                    }
+                    break;
+
+                case "3":
+                    // daca nu mi iese flee ul are avantaj (atac in plus) wild creature ul
+                    if (!bm.tryFlee()) {
+                        int rawDmg = Math.max(1, wild.getAttack() - active.getDefense());
+                        active.takeDamage(rawDmg);
+                        System.out.printf("  -> The wild %s attacks back! %s takes %d damage.%n",
+                                wild.getName(), active.getNickname(), rawDmg);
+                    }
+                    break;
+
+                default:
+                    System.out.println("  Invalid choice, please enter 1, 2 or 3.");
+            }
+        }
+
+        System.out.printf("[ENCOUNTER] Ended. Result: %s%n",
+                bm.getResult().isEmpty() ? "Fainted/Fled" : bm.getResult());
     }
 
 }
