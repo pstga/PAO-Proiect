@@ -8,7 +8,7 @@ import items.Potion;
 import service.GameService;
 
 import java.util.Scanner;
-
+// todo: mecanica de level up si de cumparat chestii !!
 public class Main {
 
     public static void main(String[] args) {
@@ -23,14 +23,14 @@ public class Main {
         // cand voi avea db o sa am optiunea de a adauga traineri si chestii in plus :) 
 
         // adaugam mutari
-        Move focBlast = new Move("Fire Blast", 90, 85, 5, CreatureType.FIRE, MoveCategory.SPECIAL, StatusEffect.BURN);
+        Move focBlast = new Move("FireBall", 90, 85, 5, CreatureType.FIRE, MoveCategory.SPECIAL, StatusEffect.BURN);
         Move hydropump = new Move("Hydropump", 95, 80, 5, CreatureType.WATER, MoveCategory.SPECIAL, StatusEffect.NONE);
         Move thunderbolt = new Move("Thunderbolt", 80, 100, 15, CreatureType.ELECTRIC, MoveCategory.SPECIAL, StatusEffect.PARALYSIS);
         Move razorLeaf = new Move("Razor Leaf", 55, 95, 25, CreatureType.GRASS, MoveCategory.PHYSICAL, StatusEffect.NONE);
         Move tackle = new Move("Tackle", 40, 100, 35, CreatureType.NORMAL, MoveCategory.PHYSICAL, StatusEffect.NONE);
         Move iceBeam = new Move("Ice Beam", 90, 100, 10, CreatureType.ICE, MoveCategory.SPECIAL, StatusEffect.SLEEP);
         Move poisonSting  = new Move("Poison Sting", 15, 100, 35, CreatureType.POISON,  MoveCategory.PHYSICAL, StatusEffect.POISON);
-        Move psychic = new Move("Psychic", 90, 100, 10, CreatureType.PSYCHIC, MoveCategory.SPECIAL, StatusEffect.NONE);
+        Move psychic = new Move("Brain damage", 90, 100, 10, CreatureType.PSYCHIC, MoveCategory.SPECIAL, StatusEffect.NONE);
 
         // adaugam pokemoni
         TrainerCreature charmander = new TrainerCreature("Charmander", "Piscotel", 78, 52, 43, 65, 10, CreatureType.FIRE);
