@@ -1,58 +1,42 @@
 package service;
 
 import battle.BattleManager;
-import battle.TypeChart;
 import entities.*;
 import enums.CreatureType;
-import items.Item;
-import items.Pokeball;
-import items.Potion;
 
 import java.util.*;
 import java.util.stream.Collectors;
 
-/**
- * Clasa serviciu centrală — expune toate cele 10 operații ale sistemului.
- */
 public class GameService {
 
-    // ── Colecție 1: TreeSet cu traineri, sortați după badge-uri (descrescător) ──
-    private TreeSet<Trainer> trainerRanking;
-
-    // ── Colecție 2: HashMap creature_name → WildCreature (acces rapid) ─────────
+    private List<Trainer> trainerRanking;
     private Map<String, WildCreature> wildCreatureRegistry;
 
     public GameService() {
-        // Comparator: mai multe badge-uri = rang mai bun; egal → după nume
-        this.trainerRanking = new TreeSet<>(
-                Comparator.comparingInt(Trainer::getBadgeCount).reversed()
-                        .thenComparing(Trainer::getName)
-        );
+        this.trainerRanking = new ArrayList<>();
         this.wildCreatureRegistry = new HashMap<>();
     }
 
-    // ════════════════════════════════════════════════════════════════════════
-    // 1. Înregistrare trainer
-    // ════════════════════════════════════════════════════════════════════════
+    // inregistrare trainer
     public void registerTrainer(Trainer trainer) {
-        trainerRanking.add(trainer);
-        System.out.printf("[SERVICE] Trainer '%s' înregistrat.%n", trainer.getName());
+        boolean exists = trainerRanking.stream()
+                .anyMatch(t -> t.getName().equalsIgnoreCase(trainer.getName()));
+        if (!exists) {
+            trainerRanking.add(trainer);
+            System.out.printf("[SERVICE] Trainer '%s' registered.%n", trainer.getName());
+        } else {
+            System.out.printf("[SERVICE] Trainer '%s' is already registered.%n", trainer.getName());
+        }
     }
 
-    // ════════════════════════════════════════════════════════════════════════
-    // 2. Adăugare creatură în echipa unui trainer
-    // ════════════════════════════════════════════════════════════════════════
+    // adaugare creatura in echipa unui trainer
     public boolean addCreatureToTrainer(Trainer trainer, TrainerCreature creature) {
-        boolean ok = trainer.addToParty(creature);
-        if (ok) refreshTrainer(trainer);
-        return ok;
+        return trainer.addToParty(creature);
     }
 
-    // ════════════════════════════════════════════════════════════════════════
-    // 3. Afișare toate creaturile unui trainer, sortate după nivel (TreeSet)
-    // ════════════════════════════════════════════════════════════════════════
+    // afisare toate creaturile unui trainer, sortate dupa nivel
     public void printCreaturesSortedByLevel(Trainer trainer) {
-        System.out.printf("%n[SERVICE] Creaturile lui %s (sortate după nivel):%n", trainer.getName());
+        System.out.printf("%n[SERVICE] %s's creatures (sorted by level):%n", trainer.getName());
         TreeSet<TrainerCreature> sorted = new TreeSet<>(trainer.getParty());
         int i = 1;
         for (TrainerCreature c : sorted) {
@@ -60,57 +44,47 @@ public class GameService {
         }
     }
 
-    // ════════════════════════════════════════════════════════════════════════
-    // 4. Căutare creatură după nume (în toți trainerii înregistrați)
-    // ════════════════════════════════════════════════════════════════════════
-    public Optional<TrainerCreature> findCreatureByName(String name) {
-        System.out.printf("%n[SERVICE] Căutare creatură: '%s'...%n", name);
+    // cautare creatura dupa nume
+    public TrainerCreature findCreatureByName(String name) {
+        System.out.printf("%n[SERVICE] Searching for creature: '%s'...%n", name);
         for (Trainer t : trainerRanking) {
-            Optional<TrainerCreature> found = t.getParty().stream()
-                    .filter(c -> c.getName().equalsIgnoreCase(name)
-                              || c.getNickname().equalsIgnoreCase(name))
-                    .findFirst();
-            if (found.isPresent()) {
-                System.out.printf("  → Găsit la trainer '%s': %s%n", t.getName(), found.get());
-                return found;
+            for (TrainerCreature c : t.getParty()) {
+                if (c.getName().equalsIgnoreCase(name) || 
+                   (c.getNickname() != null && c.getNickname().equalsIgnoreCase(name))) {
+                    System.out.printf("  -> Found at trainer '%s': %s%n", t.getName(), c);
+                    return c;
+                }
             }
         }
-        System.out.println("  → Nu a fost găsit.");
-        return Optional.empty();
+        System.out.println("  -> Not found.");
+        return null;
     }
 
-    // ════════════════════════════════════════════════════════════════════════
-    // 5. Filtrare creaturi după tip (toate creaturile din toți trainerii)
-    // ════════════════════════════════════════════════════════════════════════
+    // cautare trainer dupa nume
+    public Trainer findTrainer(String name) {
+        for (Trainer t : trainerRanking) {
+            if (t.getName().equalsIgnoreCase(name)) {
+                return t;
+            }
+        }
+        return null;
+    }
+
+    // filtrare creaturi dupa tip
     public List<TrainerCreature> filterByType(CreatureType type) {
-        System.out.printf("%n[SERVICE] Creaturi de tip %s:%n", type);
+        System.out.printf("%n[SERVICE] Creatures of type %s:%n", type);
         List<TrainerCreature> result = trainerRanking.stream()
                 .flatMap(t -> t.getParty().stream())
                 .filter(c -> c.getType() == type)
                 .collect(Collectors.toList());
-        result.forEach(c -> System.out.println("  → " + c));
-        if (result.isEmpty()) System.out.println("  (niciuna)");
+        result.forEach(c -> System.out.println("  -> " + c));
+        if (result.isEmpty()) System.out.println("  (none)");
         return result;
     }
 
-    // ════════════════════════════════════════════════════════════════════════
-    // 6. Aplicarea unui atac simulat (un singur tur de luptă)
-    // ════════════════════════════════════════════════════════════════════════
-    public void executeBattleTurn(Trainer player, Object opponent, int moveIndex) {
-        System.out.println("\n[SERVICE] Executare tur de luptă...");
-        BattleManager bm = new BattleManager(player, opponent);
-        bm.startBattle();
-        bm.executeTurn(moveIndex);
-        if (bm.isBattleOver()) {
-            System.out.printf("  → Rezultat: %s%n", bm.getResult());
-        }
-    }
-
-    // ════════════════════════════════════════════════════════════════════════
-    // 7. Luptă completă trainer vs trainer
-    // ════════════════════════════════════════════════════════════════════════
+    // lupta completa trainer vs trainer
     public String conductFullBattle(Trainer player, Trainer rival) {
-        System.out.println("\n[SERVICE] Luptă completă...");
+        System.out.println("\n[SERVICE] Full battle...");
         BattleManager bm = new BattleManager(player, rival);
         bm.startBattle();
         int turn = 0;
@@ -118,61 +92,43 @@ public class GameService {
             bm.executeTurn(0); // simplu: mereu prima mutare
             turn++;
         }
-        String result = bm.getResult();
-        if ("WIN".equals(result)) {
-            player.addBadge("Badge de la " + rival.getName());
-            refreshTrainer(player);
-            refreshTrainer(rival);
-        }
-        return result;
+        return bm.getResult();
     }
 
-    // ════════════════════════════════════════════════════════════════════════
-    // 8. Folosire item din inventar
-    // ════════════════════════════════════════════════════════════════════════
+    // folosire item din inventar
     public boolean useItemOnCreature(Trainer trainer, String itemName, Creature target) {
-        System.out.printf("%n[SERVICE] %s folosește %s pe %s...%n",
+        System.out.printf("%n[SERVICE] %s uses %s on %s...%n",
                 trainer.getName(), itemName, target.getName());
         return trainer.useItem(itemName, target);
     }
 
-    // ════════════════════════════════════════════════════════════════════════
-    // 9. Vindecare echipă completă
-    // ════════════════════════════════════════════════════════════════════════
+    // vindecare echipa completa
     public void healTeam(Trainer trainer) {
-        System.out.printf("%n[SERVICE] Vindecare echipă '%s'...%n", trainer.getName());
+        System.out.printf("%n[SERVICE] Healing team '%s'...%n", trainer.getName());
         trainer.healAllCreatures();
         trainer.printParty();
     }
 
-    // ════════════════════════════════════════════════════════════════════════
-    // 10. Clasamentul trainerilor după badge-uri
-    // ════════════════════════════════════════════════════════════════════════
+    // clasamentul trainerilor
     public void printRanking() {
-        System.out.println("\n[SERVICE] ══ CLASAMENT TRAINERI ══");
+        System.out.println("\n[SERVICE] == TRAINER RANKINGS ==");
+        trainerRanking.sort(Comparator.comparing(Trainer::getName));
         int rank = 1;
         for (Trainer t : trainerRanking) {
-            System.out.printf("  %2d. %-15s | Badge-uri: %d | Creaturi: %d%n",
-                    rank++, t.getName(), t.getBadgeCount(), t.getParty().size());
+            System.out.printf("  %2d. %-15s | Creatures: %d%n",
+                    rank++, t.getName(), t.getParty().size());
         }
     }
 
-    // ════════════════════════════════════════════════════════════════════════
-    // BONUS: Registru creaturi sălbatice
-    // ════════════════════════════════════════════════════════════════════════
+    // registru creaturi salbatice
     public void registerWildCreature(WildCreature wc) {
         wildCreatureRegistry.put(wc.getName().toLowerCase(), wc);
-        System.out.printf("[SERVICE] Creatură sălbatică '%s' înregistrată în registru.%n", wc.getName());
+        System.out.printf("[SERVICE] Wild creature '%s' registered.%n", wc.getName());
     }
 
     public void printWildRegistry() {
-        System.out.println("\n[SERVICE] ══ REGISTRU CREATURI SĂLBATICE ══");
+        System.out.println("\n[SERVICE] == WILD CREATURE REGISTRY ==");
         wildCreatureRegistry.values().forEach(wc -> System.out.println("  " + wc));
     }
 
-    // ── Helper intern: TreeSet nu se auto-actualizează la modificări ──────────
-    private void refreshTrainer(Trainer trainer) {
-        trainerRanking.remove(trainer);
-        trainerRanking.add(trainer);
-    }
 }

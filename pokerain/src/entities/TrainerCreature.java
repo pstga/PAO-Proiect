@@ -17,28 +17,28 @@ public class TrainerCreature extends Creature {
     @Override
     public void levelUp() {
         level++;
-        maxHp   += 12;
-        hp       = Math.min(hp + 12, maxHp);
-        attack  += 4;
+        maxHp += 12;
+        hp = Math.min(hp + 12, maxHp);
+        attack += 4;
         defense += 3;
-        speed   += 3;
-        loyalty  = Math.min(255, loyalty + 5);
+        speed += 3;
+        loyalty = Math.min(255, loyalty + 5);
         experience = 0;
-        System.out.printf("  ★ %s a evoluat la nivelul %d! (Loialitate: %d)%n", nickname, level, loyalty);
+        System.out.printf("  Yay! %s grew to level %d! (Loyalty: %d)%n", nickname, level, loyalty);
     }
 
     @Override
     public String getDescription() {
-        return String.format("Creatură trainer: %s (%s) | Loialitate: %d/255", nickname, name, loyalty);
+        return String.format("Trainer creature: %s (%s) | Loyalty: %d/255", nickname, name, loyalty);
     }
 
-    /** Bonus de atac bazat pe loialitate (max +20%%) */
+    // bonus de atac!
     public double getLoyaltyBonus() {
         return 1.0 + (loyalty / 255.0) * 0.20;
     }
 
     public String getNickname() { return nickname; }
-    public int    getLoyalty()  { return loyalty; }
+    public int getLoyalty()  { return loyalty; }
 
     public void setNickname(String nickname) { this.nickname = nickname; }
     public void increaseLoyalty(int amount)  { loyalty = Math.min(255, loyalty + amount); }
@@ -47,7 +47,7 @@ public class TrainerCreature extends Creature {
     @Override
     public String toString() {
         String display = nickname.equals(name) ? name : nickname + " (" + name + ")";
-        return String.format("[%-18s | Niv.%2d | HP: %3d/%-3d | Tip: %-10s | Loialitate: %3d]",
+        return String.format("[%-18s | Lvl.%2d | HP: %3d/%-3d | Type: %-10s | Loyalty: %3d]",
                 display, level, hp, maxHp, type, loyalty);
     }
 }

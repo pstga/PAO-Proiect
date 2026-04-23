@@ -1,39 +1,38 @@
+// trainerul, adica jucatorul, adica tu, cel din consola ! 
 package entities;
 
 import items.Item;
-import items.Potion;
 
 import java.util.*;
 
 public class Trainer {
 
-    private String             name;
-    private List<TrainerCreature> party;      // max 6, List ordonată
-    private Map<String, Integer>  bag;        // item_name → cantitate
-    private List<Item>            itemObjects;// obiectele efective
-    private List<String>          badges;
-    private int                   money;
+    private String name;
+    private List<TrainerCreature> party; // max 6, lista ordonata
+    private Map<String, Integer>  bag; // item_name -> cantitate
+    private List<Item> itemObjects; // obiectele efective
+    private int money;
 
     public Trainer(String name, int money) {
-        this.name        = name;
-        this.money       = money;
-        this.party       = new ArrayList<>();
-        this.bag         = new LinkedHashMap<>();
+        this.name = name;
+        this.money = money;
+        this.party = new ArrayList<>();
+        this.bag = new LinkedHashMap<>();
         this.itemObjects = new ArrayList<>();
-        this.badges      = new ArrayList<>();
     }
 
-    // ── Echipă ───────────────────────────────────────────────────────────────
+    // adaugam echipei
     public boolean addToParty(TrainerCreature creature) {
         if (party.size() >= 6) {
-            System.out.println("  → Echipa e plină! (max 6 creaturi)");
+            System.out.println("  -> Team is already full! (max 6 creatures)");
             return false;
         }
         party.add(creature);
-        System.out.printf("  → %s a adăugat pe %s în echipă!%n", name, creature.getNickname());
+        System.out.printf("  -> %s added %s to the team!%n", name, creature.getNickname());
         return true;
     }
 
+    // luam pokemonii in ordine basically; primul alive gasit va fi bagat in lupta automat </3
     public TrainerCreature getActiveCreature() {
         for (TrainerCreature c : party) {
             if (c.isAlive()) return c;
@@ -41,58 +40,66 @@ public class Trainer {
         return null;
     }
 
+    // daca avem creaturi in viata: lupta poate continua
     public boolean hasAliveCreatures() {
         return party.stream().anyMatch(Creature::isAlive);
     }
 
+    // heal uim toata echipa
     public void healAllCreatures() {
-        System.out.printf("  → %s vindecă toată echipa!%n", name);
+        System.out.printf("  -> %s Heals all creatures!%n", name);
         for (TrainerCreature c : party) {
             c.heal(c.getMaxHp());
             c.setStatusEffect(enums.StatusEffect.NONE);
         }
     }
 
-    // ── Inventar ──────────────────────────────────────────────────────────────
+    // inventar: adaugam item
     public void addItem(Item item, int quantity) {
         bag.merge(item.getName(), quantity, Integer::sum);
-        // adaugă obiectul dacă nu există deja
+        // adauga itemul daca nu exista deja
         boolean exists = itemObjects.stream().anyMatch(i -> i.getName().equals(item.getName()));
         if (!exists) itemObjects.add(item);
-        System.out.printf("  → %s a primit %dx %s.%n", name, quantity, item.getName());
+        System.out.printf("  -> %s received %dx %s.%n", name, quantity, item.getName());
     }
 
+    // luam primul item din bag 
     public boolean useItem(String itemName, Creature target) {
-        if (!bag.containsKey(itemName) || bag.get(itemName) <= 0) {
-            System.out.printf("  → %s nu are %s în inventar!%n", name, itemName);
+        String actualItemName = null;
+        for (String key : bag.keySet()) {
+            if (key.equalsIgnoreCase(itemName.trim())) {
+                actualItemName = key;
+                break;
+            }
+        }
+
+        if (actualItemName == null || bag.get(actualItemName) <= 0) {
+            System.out.printf("  -> %s does not have %s in inventory!%n", name, itemName);
             return false;
         }
+
+        String finalActualItemName = actualItemName;
         Item item = itemObjects.stream()
-                .filter(i -> i.getName().equals(itemName))
+                .filter(i -> i.getName().equals(finalActualItemName))
                 .findFirst().orElse(null);
         if (item == null) return false;
 
+        // daca era ultimul item de acest fel il scoatem din lista; nu l mai are :)
         boolean used = item.use(target);
         if (used) {
-            bag.merge(itemName, -1, Integer::sum);
-            if (bag.get(itemName) <= 0) bag.remove(itemName);
+            bag.merge(actualItemName, -1, Integer::sum);
+            if (bag.get(actualItemName) <= 0) bag.remove(actualItemName);
         }
         return used;
     }
 
-    // ── Badge-uri ─────────────────────────────────────────────────────────────
-    public void addBadge(String badge) {
-        badges.add(badge);
-        System.out.printf("  ★ %s a câștigat badge-ul: %s! (Total: %d)%n", name, badge, badges.size());
-    }
 
-    // ── Getteri ───────────────────────────────────────────────────────────────
-    public String                getName()        { return name; }
-    public List<TrainerCreature> getParty()       { return party; }
-    public Map<String, Integer>  getBag()         { return bag; }
-    public List<String>          getBadges()      { return badges; }
-    public int                   getMoney()       { return money; }
-    public int                   getBadgeCount()  { return badges.size(); }
+
+    // getteri
+    public String getName(){ return name; }
+    public List<TrainerCreature> getParty(){ return party; }
+    public Map<String, Integer>  getBag()   { return bag; }
+    public int getMoney() { return money; }
 
     public void addMoney(int amount) { money += amount; }
     public boolean spendMoney(int amount) {
@@ -102,22 +109,22 @@ public class Trainer {
     }
 
     public void printParty() {
-        System.out.printf("%n  Echipa lui %s:%n", name);
-        if (party.isEmpty()) { System.out.println("    (goală)"); return; }
+        System.out.printf("%n  %s's Team:%n", name);
+        if (party.isEmpty()) { System.out.println("    (empty)"); return; }
         for (int i = 0; i < party.size(); i++) {
             System.out.printf("    %d. %s%n", i + 1, party.get(i));
         }
     }
 
     public void printBag() {
-        System.out.printf("%n  Inventarul lui %s:%n", name);
-        if (bag.isEmpty()) { System.out.println("    (gol)"); return; }
+        System.out.printf("%n  %s's Inventory:%n", name);
+        if (bag.isEmpty()) { System.out.println("    (empty)"); return; }
         bag.forEach((k, v) -> System.out.printf("    %-14s x%d%n", k, v));
     }
 
     @Override
     public String toString() {
-        return String.format("Trainer %-12s | Badge-uri: %d | Bani: %d¥ | Creaturi: %d/6",
-                name, badges.size(), money, party.size());
+        return String.format("Trainer %-12s | Money: %d¥ | Creatures: %d/6",
+                name, money, party.size());
     }
 }

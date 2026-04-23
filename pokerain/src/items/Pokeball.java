@@ -5,28 +5,24 @@ import entities.WildCreature;
 
 public class Pokeball extends Item {
 
-    private double catchBonus;  // multiplicator față de catchRate de bază
-
-    public Pokeball(String name, double catchBonus, int price) {
-        super(name, "Minge de prindere (bonus: x" + catchBonus + ")", price);
-        this.catchBonus = catchBonus;
+    public Pokeball(String name, int price) {
+        super(name, "Catching ball", price);
     }
 
     @Override
     public boolean use(Creature target) {
         if (!(target instanceof WildCreature wild)) {
-            System.out.println("  → Poți prinde doar creaturi sălbatice!");
+            System.out.println("  -> You can only catch wild creatures!");
             return false;
         }
-        System.out.printf("  → Arunci %s spre %s...%n", name, target.getName());
-        boolean success = wild.attemptCatch(catchBonus);
+        System.out.printf("  -> Throwing %s at %s...%n", name, target.getName());
+        boolean success = wild.attemptCatch();
         if (success) {
-            System.out.printf("  → %s a fost prins! 🎉%n", target.getName());
+            System.out.printf("  -> %s was caught!%n", target.getName());
         } else {
-            System.out.printf("  → %s a scăpat din %s!%n", target.getName(), name);
+            System.out.printf("  -> Darn it! %s escaped!%n", target.getName());
         }
         return success;
     }
 
-    public double getCatchBonus() { return catchBonus; }
 }
