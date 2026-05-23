@@ -6,6 +6,7 @@ import enums.MoveCategory;
 import enums.StatusEffect;
 
 public class Move {
+    private int id; // id din baza de date
     private String name;
     private int power;
     private int accuracy;      // 0–100
@@ -28,6 +29,8 @@ public class Move {
     }
 
     // getteri
+    public int getId(){ return id; }
+    public void setId(int id){ this.id = id; }
     public String getName(){ return name; }
     public int getPower(){ return power; }
     public int getAccuracy(){ return accuracy; }

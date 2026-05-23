@@ -7,6 +7,7 @@ import java.util.*;
 
 public class Trainer {
 
+    private int    id;   // id din baza de date (0 daca nu e salvat inca)
     private String name;
     private List<TrainerCreature> party; // max 6, lista ordonata
     private Map<String, Integer>  bag; // item_name -> cantitate
@@ -94,11 +95,14 @@ public class Trainer {
     }
 
     // getteri
+    public int getId(){ return id; }
+    public void setId(int id){ this.id = id; }
     public String getName(){ return name; }
     public List<TrainerCreature> getParty(){ return party; }
     public Map<String, Integer>  getBag()   { return bag; }
     public List<Item> getItemObjects() { return itemObjects; }
     public int getMoney() { return money; }
+    public void setMoney(int money) { this.money = money; }
 
     public void addMoney(int amount) { money += amount; }
     public boolean spendMoney(int amount) {

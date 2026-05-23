@@ -10,6 +10,8 @@ import java.util.List;
 
 public abstract class Creature implements Comparable<Creature> {
 
+    protected int id; // id din baza de date (0 daca nu e salvat inca)
+
     protected String name;
     protected int hp;
     protected int maxHp;
@@ -86,6 +88,8 @@ public abstract class Creature implements Comparable<Creature> {
     }
 
     // getteri + setteri
+    public int getId(){ return id; }
+    public void setId(int id){ this.id = id; }
     public String getName(){ return name; }
     public int getHp(){ return hp; }
     public int getMaxHp(){ return maxHp; }

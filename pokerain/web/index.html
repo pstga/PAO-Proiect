@@ -1,0 +1,1306 @@
+<!DOCTYPE html>
+<html lang="ro">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>POKERAIN</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=VT323:wght@400&display=swap" rel="stylesheet">
+<style>
+/* ═══════════════════════════════════════════════
+   POKERAIN – Game UI   (Pokemon GBA / DS style)
+   ═══════════════════════════════════════════════ */
+:root{
+  --black:#181818; --white:#f0f0e8; --off:#d8d8c8;
+  --blue:#4868e0;  --blue2:#8898f8; --blue-d:#182870;
+  --red:#e03028;   --yel:#f8d030;   --grn:#28b840;
+  --hp-g:#38d038; --hp-y:#f0c820; --hp-r:#e03028;
+  --grass:#1a3a1a; --grass2:#224022;
+  --px: 'Press Start 2P', monospace;
+  --vt: 'VT323', monospace;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%;overflow:hidden}
+
+body{
+  font-family:var(--px);
+  background:var(--grass);
+  background-image:
+    repeating-linear-gradient(0deg,transparent,transparent 31px,rgba(255,255,255,.04) 32px),
+    repeating-linear-gradient(90deg,transparent,transparent 31px,rgba(255,255,255,.04) 32px);
+  display:flex;flex-direction:column;height:100vh;
+  position:relative;
+}
+/* scanlines */
+body::after{content:'';position:fixed;inset:0;
+  background:repeating-linear-gradient(0deg,transparent,transparent 3px,rgba(0,0,0,.12) 3px,rgba(0,0,0,.12) 4px);
+  pointer-events:none;z-index:9000}
+
+/* ── PIXEL BOX  (Pokemon dialog style) ─────────────── */
+.pbox{
+  background:var(--white);
+  border:4px solid var(--black);
+  box-shadow:inset 0 0 0 3px var(--blue2),inset 0 0 0 5px var(--black);
+  border-radius:4px;
+}
+.pbox-dark{
+  background:#1a2050;
+  border:4px solid var(--black);
+  box-shadow:inset 0 0 0 3px #4050b0,inset 0 0 0 5px var(--black);
+  border-radius:4px;
+}
+
+/* ── TOP HUD ────────────────────────────────────────── */
+.hud{
+  display:flex;align-items:stretch;gap:0;
+  height:64px;flex-shrink:0;
+  background:#1a2050;
+  border-bottom:4px solid var(--black);
+  box-shadow:0 4px 0 #0a1030;
+}
+.hud-brand{
+  display:flex;align-items:center;gap:10px;
+  padding:0 20px;
+  background:linear-gradient(135deg,#2838a8,#4060e0);
+  border-right:4px solid var(--black);
+  min-width:220px;
+}
+.pokeball-sm{width:24px;height:24px;border-radius:50%;
+  background:linear-gradient(180deg,var(--red) 50%,var(--white) 50%);
+  border:2px solid var(--black);position:relative;animation:spin 8s linear infinite;flex-shrink:0}
+.pokeball-sm::before{content:'';position:absolute;width:100%;height:2px;background:var(--black);top:50%;transform:translateY(-50%)}
+.pokeball-sm::after{content:'';position:absolute;width:7px;height:7px;background:var(--white);border:2px solid var(--black);border-radius:50%;top:50%;left:50%;transform:translate(-50%,-50%)}
+@keyframes spin{to{transform:rotate(360deg)}}
+.brand-name{font-size:14px;color:var(--white);letter-spacing:1px;text-shadow:2px 2px 0 var(--blue-d)}
+
+.hud-tabs{display:flex;flex:1;overflow:hidden}
+.tab{
+  display:flex;align-items:center;gap:8px;
+  padding:0 18px;font-size:10px;color:#8898d8;
+  cursor:pointer;border-right:2px solid #0a1030;
+  transition:background .15s;white-space:nowrap;
+  position:relative;user-select:none;
+}
+.tab:hover{background:rgba(255,255,255,.06);color:var(--white)}
+.tab.active{background:#2838a8;color:var(--white)}
+.tab.active::after{content:'';position:absolute;bottom:-4px;left:0;right:0;height:4px;background:var(--yel)}
+.tab-icon{font-size:16px}
+
+.hud-status{display:flex;align-items:center;gap:10px;padding:0 16px;
+  border-left:2px solid #0a1030;font-size:10px;color:#8898d8}
+.db-dot{width:8px;height:8px;background:var(--grn);border-radius:50%;animation:pulse 2s ease-in-out infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.2}}
+
+/* ── MAIN AREA ──────────────────────────────────────── */
+.game-body{display:flex;flex:1;overflow:hidden;gap:0}
+
+/* LEFT PANEL: CONTENT */
+.content{flex:1;overflow-y:auto;padding:16px;scrollbar-width:thin;scrollbar-color:#2838a8 #0d1a0d}
+.content::-webkit-scrollbar{width:8px}
+.content::-webkit-scrollbar-track{background:#0d1a0d}
+.content::-webkit-scrollbar-thumb{background:#2838a8;border:2px solid #0d1a0d}
+
+.page{display:none}.page.active{display:block;animation:fade .2s}
+@keyframes fade{from{opacity:0}to{opacity:1}}
+
+/* RIGHT PANEL: STATUS */
+.sidebar{
+  width:270px;flex-shrink:0;
+  background:#101830;
+  border-left:4px solid var(--black);
+  display:flex;flex-direction:column;
+  overflow:hidden;
+}
+.sb-title{padding:12px 14px;font-size:11px;color:var(--yel);
+  border-bottom:2px solid var(--black);background:#1a2860;letter-spacing:1px}
+.sb-item{padding:12px 14px;font-size:10px;color:#8898d8;
+  border-bottom:1px solid rgba(255,255,255,.05);transition:all .15s}
+.sb-item:hover{background:rgba(72,104,224,.15);color:var(--white);padding-left:18px}
+.sb-item strong{display:block;color:var(--white);margin-bottom:4px;font-size:11px}
+
+/* ── PAGE HEADER ────────────────────────────────────── */
+.ph{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px}
+.ph-title{font-size:15px;color:var(--yel);text-shadow:2px 2px 0 #806010;letter-spacing:1px}
+.ph-count{font-size:10px;color:#8898d8;margin-top:4px}
+
+/* ── GAME SECTION TITLE ─────────────────────────────── */
+.gst{font-size:11px;color:var(--blue2);margin:16px 0 10px;letter-spacing:1px;
+  display:flex;align-items:center;gap:8px}
+.gst::before{content:'▶';color:var(--yel);font-size:12px}
+
+/* ── STAT CARDS ─────────────────────────────────────── */
+.sg{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:14px}
+.sc{padding:14px 10px;text-align:center;position:relative;overflow:hidden;cursor:default}
+.sc::before{content:'';position:absolute;inset:0;background:linear-gradient(135deg,rgba(72,104,224,.15),transparent)}
+.sc-ic{font-size:24px;margin-bottom:8px}
+.sc-lbl{font-size:9px;color:#8898d8;margin-bottom:6px;letter-spacing:.5px}
+.sc-val{font-size:26px;color:var(--yel);font-family:var(--vt);text-shadow:0 0 10px rgba(248,208,48,.5)}
+
+/* ── TRAINER CARDS ──────────────────────────────────── */
+.tg{display:grid;grid-template-columns:repeat(auto-fill,minmax(190px,1fr));gap:10px;margin-bottom:14px}
+.tc{padding:14px;cursor:default;transition:all .15s}
+.tc:hover{transform:translateY(-2px)}
+.tc-sprite{font-size:36px;text-align:center;margin-bottom:8px;line-height:1}
+.tc-name{font-size:11px;color:var(--black);margin-bottom:4px;text-align:center}
+.tc-money{font-size:10px;color:#805000;text-align:center}
+.tc-id{font-size:9px;color:var(--blue);margin-top:6px;text-align:center}
+
+/* ── HP BAR ─────────────────────────────────────────── */
+.hp-wrap{height:12px;background:#383828;border:2px solid var(--black);margin:4px 0}
+.hp-fill{height:100%;transition:width .4s}
+.hp-g{background:var(--hp-g)}
+.hp-y{background:var(--hp-y)}
+.hp-r{background:var(--hp-r)}
+.hp-label{font-size:9px;color:#605840;margin-bottom:2px;display:flex;justify-content:space-between}
+
+/* ── TYPE BADGES ────────────────────────────────────── */
+.tb{display:inline-block;padding:3px 8px;border:2px solid var(--black);
+  font-size:9px;letter-spacing:.3px;font-weight:400;line-height:1.4}
+.type-FIRE    {background:#f03820;color:var(--white)}
+.type-WATER   {background:#2870f8;color:var(--white)}
+.type-GRASS   {background:#38a040;color:var(--white)}
+.type-ELECTRIC{background:#f8c030;color:var(--black)}
+.type-NORMAL  {background:#a0a080;color:var(--white)}
+.type-ICE     {background:#60c8d0;color:var(--black)}
+.type-POISON  {background:#8030a0;color:var(--white)}
+.type-PSYCHIC {background:#e03070;color:var(--white)}
+
+/* ── GAME TABLE ─────────────────────────────────────── */
+.gt{width:100%;border-collapse:collapse;font-size:10px}
+.gt thead tr{background:#1a2860}
+.gt th{padding:10px 12px;color:var(--blue2);text-align:left;font-size:9px;letter-spacing:.5px;
+  border-bottom:2px solid var(--black)}
+.gt td{padding:10px 12px;color:var(--black);border-bottom:1px solid rgba(0,0,0,.08);vertical-align:middle}
+.gt tbody tr:hover td{background:rgba(72,104,224,.08)}
+.gt .idc{color:var(--blue);font-size:9px}
+.gt .mc{color:#804800;font-size:12px;font-family:var(--vt)}
+
+/* ── BUTTONS ────────────────────────────────────────── */
+.btn{padding:10px 16px;border:3px solid var(--black);font-family:var(--px);font-size:10px;
+  cursor:pointer;transition:all .1s;display:inline-flex;align-items:center;gap:6px;
+  box-shadow:3px 3px 0 var(--black);position:relative}
+.btn:active{transform:translate(2px,2px);box-shadow:1px 1px 0 var(--black)}
+.btn-p{background:var(--blue);color:var(--white)}
+.btn-p:hover{background:var(--blue2)}
+.btn-d{background:var(--red);color:var(--white)}
+.btn-d:hover{background:#f05848}
+.btn-c{background:var(--off);color:var(--black)}
+.btn-c:hover{background:var(--white)}
+.btn-sm{padding:6px 11px;font-size:9px;box-shadow:2px 2px 0 var(--black)}
+.btn-sm:active{transform:translate(1px,1px);box-shadow:1px 1px 0 var(--black)}
+
+/* ── SEARCH ─────────────────────────────────────────── */
+.gi{padding:8px 12px;background:var(--off);border:3px solid var(--black);
+  font-family:var(--px);font-size:10px;color:var(--black);outline:none;
+  box-shadow:inset 2px 2px 0 rgba(0,0,0,.15)}
+.gi:focus{background:var(--white);box-shadow:inset 2px 2px 0 rgba(0,0,0,.15),0 0 0 2px var(--blue)}
+.gs{padding:8px 12px;background:var(--off);border:3px solid var(--black);
+  font-family:var(--px);font-size:9px;color:var(--black);outline:none}
+.gs option{background:var(--white)}
+
+/* ── TOOLBAR ────────────────────────────────────────── */
+.tb2{display:flex;align-items:center;gap:10px;margin-bottom:14px;flex-wrap:wrap}
+
+/* ── PARTY GRID (creatures) ─────────────────────────── */
+.party{display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:12px}
+.party-card{padding:14px;position:relative}
+.party-row{display:flex;align-items:center;gap:12px}
+.party-ball{width:42px;height:42px;border-radius:50%;border:3px solid var(--black);
+  display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0}
+.party-info{flex:1}
+.party-name{font-size:11px;color:var(--black);margin-bottom:3px}
+.party-species{font-size:9px;color:#605840;margin-bottom:4px}
+.party-lv{font-size:10px;color:var(--blue-d);font-family:var(--vt)}
+.party-stats{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-top:10px}
+.pstat{text-align:center}
+.pstat-lbl{font-size:9px;color:#605840}
+.pstat-val{font-size:12px;color:var(--black);font-family:var(--vt)}
+
+/* ── MODAL / DIALOG ─────────────────────────────────── */
+.ov{position:fixed;inset:0;background:rgba(0,0,0,.85);z-index:1000;
+  display:none;align-items:center;justify-content:center}
+.ov.open{display:flex;animation:fade .15s}
+.dialog{width:460px;max-width:95vw;padding:24px;position:relative}
+.dialog::before{content:'▼ ▼';position:absolute;bottom:8px;right:16px;
+  font-size:10px;color:var(--blue);animation:blink 1s step-end infinite}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:0}}
+.dl-title{font-size:13px;color:var(--black);margin-bottom:18px;border-bottom:2px solid var(--off);
+  padding-bottom:12px;display:flex;align-items:center;gap:10px}
+.dl-actions{display:flex;gap:10px;justify-content:flex-end;margin-top:18px;
+  border-top:2px solid var(--off);padding-top:14px}
+
+/* ── FORM ───────────────────────────────────────────── */
+.fg{margin-bottom:14px}
+.fl{font-size:9px;color:var(--blue-d);display:block;margin-bottom:6px;letter-spacing:.5px}
+.fi,.fs{width:100%;padding:8px 12px;background:var(--off);border:3px solid var(--black);
+  font-family:var(--px);font-size:10px;color:var(--black);outline:none;
+  box-shadow:inset 2px 2px 0 rgba(0,0,0,.1)}
+.fi:focus,.fs:focus{background:var(--white);border-color:var(--blue)}
+.fs option{background:var(--white)}
+.fr{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+
+/* ── TOAST ──────────────────────────────────────────── */
+.tc3{position:fixed;bottom:90px;right:18px;z-index:500;display:flex;flex-direction:column;gap:8px}
+.toast{padding:12px 16px;border:3px solid var(--black);font-size:10px;
+  box-shadow:3px 3px 0 var(--black);animation:ti .2s}
+.toast.ok{background:#28b840;color:var(--white)}
+.toast.err{background:var(--red);color:var(--white)}
+@keyframes ti{from{opacity:0;transform:translateX(12px)}to{opacity:1;transform:none}}
+
+/* ── DIALOG BOX (bottom) ────────────────────────────── */
+.msg-bar{
+  height:88px;flex-shrink:0;
+  border-top:4px solid var(--black);
+  padding:12px 20px;
+  display:flex;align-items:center;gap:16px;
+  font-size:11px;
+  color:var(--black);
+  position:relative;
+}
+.msg-cursor{color:var(--blue);animation:blink 1s step-end infinite;font-size:14px}
+.msg-ab{position:absolute;right:20px;top:50%;transform:translateY(-50%);
+  display:flex;gap:8px}
+.ab-btn{width:36px;height:36px;border-radius:50%;border:3px solid var(--black);
+  display:flex;align-items:center;justify-content:center;font-size:10px;cursor:pointer;
+  box-shadow:2px 2px 0 var(--black);font-family:var(--px)}
+.ab-a{background:var(--red);color:var(--white)}
+.ab-b{background:#8898d8;color:var(--white)}
+.ab-a:hover{background:#f05848}
+.ab-b:hover{background:var(--blue2)}
+
+/* ── POKEDEX WILD CARD ──────────────────────────────── */
+.wild-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:12px}
+.wild-card{padding:14px}
+.wild-header{display:flex;align-items:center;gap:12px;margin-bottom:12px}
+.wild-num{font-size:9px;color:var(--blue);font-family:var(--vt);width:40px}
+.wild-name{font-size:12px;color:var(--black)}
+.wild-sprite{font-size:32px}
+.catch-wrap{display:flex;align-items:center;gap:8px;margin-top:6px}
+.catch-bar-bg{flex:1;height:10px;background:#c8c0a0;border:2px solid var(--black)}
+.catch-bar-fill{height:100%}
+.catch-g{background:var(--hp-g)}.catch-y{background:var(--hp-y)}.catch-r{background:var(--hp-r)}
+.catch-pct{font-size:11px;color:var(--black);font-family:var(--vt);width:32px;text-align:right}
+
+/* ── AUDIT LOG ──────────────────────────────────────── */
+.log-entry{padding:10px 12px;border-bottom:1px solid rgba(0,0,0,.06);
+  display:flex;align-items:center;gap:12px}
+.log-n{font-size:10px;color:var(--blue);font-family:var(--vt);width:28px}
+.log-action{font-size:11px;font-family:var(--vt);flex:1}
+.log-time{font-size:10px;color:#806040;font-variant-numeric:tabular-nums;font-family:var(--vt)}
+.la-ok{color:#28a030}.la-del{color:var(--red)}.la-upd{color:var(--blue)}
+.la-bat{color:#f87020}.la-wld{color:#48b028}.la-def{color:#806040}
+
+/* ── EMPTY ──────────────────────────────────────────── */
+.empty{text-align:center;padding:40px;color:#8898d8;font-size:10px}
+.empty-ic{font-size:48px;margin-bottom:12px}
+
+/* Scrollbar inside pbox tables */
+.tscroll{overflow-x:auto}
+
+/* ── BATTLE ARENA ──────────────────────────────────── */
+.arena{padding:16px}
+.arena-setup{display:flex;gap:12px;align-items:flex-end;flex-wrap:wrap;margin-bottom:16px}
+.arena-field{display:flex;gap:16px;margin-bottom:16px}
+.arena-side{flex:1;padding:14px;min-height:120px}
+.arena-side-title{font-size:10px;margin-bottom:8px;letter-spacing:1px}
+.arena-vs{display:flex;align-items:center;justify-content:center;font-size:18px;color:var(--yel);
+  text-shadow:2px 2px 0 #806010;min-width:50px}
+.battle-log{max-height:400px;overflow-y:auto;padding:14px;font-family:var(--vt);font-size:15px;
+  line-height:1.7;color:var(--black);white-space:pre-wrap;word-break:break-word}
+.battle-log .bl-atk{color:#c03020}
+.battle-log .bl-dmg{color:var(--blue)}
+.battle-log .bl-eff{color:#a06000;font-style:italic}
+.battle-result{text-align:center;padding:16px;font-size:13px;letter-spacing:1px;margin-top:12px}
+.battle-result.win{color:#28a030}.battle-result.lose{color:var(--red)}.battle-result.draw{color:var(--blue)}
+
+/* ── CREATURE MOVES LIST ───────────────────────────── */
+.cmoves{display:flex;flex-wrap:wrap;gap:4px;margin-top:8px}
+.cmove{display:inline-flex;align-items:center;gap:4px;padding:3px 8px;border:2px solid var(--black);
+  font-size:8px;background:var(--off);cursor:default}
+.cmove-x{cursor:pointer;color:var(--red);font-weight:bold;margin-left:2px}
+.cmove-x:hover{color:#f05848}
+
+/* ── BATTLE TAB TEXT ───────────────────────────────── */
+#page-battle .fl,
+#page-battle .ph-title,#page-battle .ph-count,
+#page-battle .arena-side-title{color:#88c0f8}
+#page-battle .gs,#page-battle .fs{border-color:#88c0f860}
+
+/* ── SHOP ─────────────────────────────────────────── */
+.shop-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(170px,1fr));gap:10px;margin-top:10px}
+.shop-card{border:3px solid var(--black);padding:12px;background:var(--panel)}
+.shop-card .shop-name{font-size:14px;font-weight:bold;color:var(--fg)}
+.shop-card .shop-cat{font-size:8px;padding:2px 6px;border:2px solid var(--black);display:inline-block;margin-top:4px}
+.shop-cat-BALL{background:#f04040;color:#fff}.shop-cat-HEALING{background:#40a840;color:#fff}
+.shop-card .shop-desc{font-size:10px;color:#808060;margin-top:6px}
+.shop-card .shop-price{font-size:13px;font-weight:bold;color:#d8b030;margin-top:6px}
+.inv-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:8px;margin-top:10px}
+.inv-card{border:3px solid var(--black);padding:10px;background:var(--panel);display:flex;align-items:center;gap:8px}
+.inv-qty{font-size:18px;font-weight:bold;color:var(--blue);font-family:var(--vt)}
+.inv-name{font-size:12px;font-weight:bold}
+</style>
+</head>
+<body>
+
+<!-- ══════════════════ TOP HUD ══════════════════════════ -->
+<div class="hud">
+  <div class="hud-brand">
+    <div class="pokeball-sm"></div>
+    <div class="brand-name">POKERAIN</div>
+  </div>
+  <div class="hud-tabs">
+    <div class="tab active" onclick="nav('dashboard',this)"><span class="tab-icon">🏠</span>WORLD</div>
+    <div class="tab" onclick="nav('trainers',this)"><span class="tab-icon">👤</span>TRAINER</div>
+    <div class="tab" onclick="nav('moves',this)"><span class="tab-icon">⚔️</span>MOVES</div>
+    <div class="tab" onclick="nav('creatures',this)"><span class="tab-icon">🐾</span>PARTY</div>
+    <div class="tab" onclick="nav('wild',this)"><span class="tab-icon">🌿</span>WILD</div>
+    <div class="tab" onclick="nav('battle',this)"><span class="tab-icon">🏟️</span>BATTLE</div>
+    <div class="tab" onclick="nav('shop',this)"><span class="tab-icon">🛒</span>SHOP</div>
+    <div class="tab" onclick="nav('audit',this)"><span class="tab-icon">📋</span>LOG</div>
+  </div>
+  <div class="hud-status">
+    <div class="db-dot"></div>
+    <span>pokerain_db</span>
+  </div>
+</div>
+
+<!-- ══════════════════ BODY ═════════════════════════════ -->
+<div class="game-body">
+
+  <!-- ═══════ CONTENT ════════════════════════════════════ -->
+  <div class="content">
+
+    <!-- ── WORLD (dashboard) ── -->
+    <div id="page-dashboard" class="page active">
+      <div class="ph">
+        <div><div class="ph-title">◉ WORLD MAP</div>
+        <div class="ph-count" id="d-sub">Incarcam datele...</div></div>
+        <button class="btn btn-p btn-sm" onclick="loadAll()">↻ REFRESH</button>
+      </div>
+
+      <div class="sg">
+        <div class="sc pbox">
+          <div class="sc-ic">👤</div><div class="sc-lbl">TRAINERS</div>
+          <div class="sc-val" id="s-tr">–</div>
+        </div>
+        <div class="sc pbox">
+          <div class="sc-ic">⚔️</div><div class="sc-lbl">MOVES</div>
+          <div class="sc-val" id="s-mv">–</div>
+        </div>
+        <div class="sc pbox">
+          <div class="sc-ic">🐾</div><div class="sc-lbl">CREATURES</div>
+          <div class="sc-val" id="s-cr">–</div>
+        </div>
+        <div class="sc pbox">
+          <div class="sc-ic">🌿</div><div class="sc-lbl">WILD</div>
+          <div class="sc-val" id="s-wl">–</div>
+        </div>
+      </div>
+
+      <div class="gst">TRAINER ROSTER</div>
+      <div class="tg" id="d-trainers"></div>
+
+      <div class="gst">RECENT ACTIVITY</div>
+      <div class="pbox">
+        <div id="d-audit"></div>
+      </div>
+    </div>
+
+    <!-- ── TRAINERS ── -->
+    <div id="page-trainers" class="page">
+      <div class="ph">
+        <div><div class="ph-title">◉ TRAINER DATA</div>
+        <div class="ph-count" id="cnt-tr"></div></div>
+      </div>
+      <div class="tb2">
+        <input class="gi" type="text" placeholder="SEARCH..." id="q-tr" oninput="renderTrainers()" style="width:180px">
+        <button class="btn btn-p btn-sm" onclick="openModal('trainer')">＋ NEW TRAINER</button>
+      </div>
+      <div class="pbox tscroll">
+        <table class="gt">
+          <thead><tr><th>NO.</th><th>NAME</th><th>MONEY</th><th>HEAL</th><th>DEL</th></tr></thead>
+          <tbody id="tbl-tr"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- ── MOVES ── -->
+    <div id="page-moves" class="page">
+      <div class="ph">
+        <div><div class="ph-title">◉ MOVE LIST</div>
+        <div class="ph-count" id="cnt-mv"></div></div>
+      </div>
+      <div class="tb2">
+        <input class="gi" type="text" placeholder="SEARCH..." id="q-mv" oninput="renderMoves()" style="width:180px">
+        <button class="btn btn-p btn-sm" onclick="openModal('move')">＋ NEW MOVE</button>
+      </div>
+      <div class="pbox tscroll">
+        <table class="gt">
+          <thead><tr><th>NO.</th><th>NAME</th><th>PWR</th><th>ACC</th><th>PP</th><th>TYPE</th><th>CAT</th><th>EFFECT</th><th>DEL</th></tr></thead>
+          <tbody id="tbl-mv"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- ── PARTY (Creatures) ── -->
+    <div id="page-creatures" class="page">
+      <div class="ph">
+        <div><div class="ph-title">◉ PARTY SCREEN</div>
+        <div class="ph-count" id="cnt-cr"></div></div>
+        <select class="gs" id="flt-tr" onchange="fetchCreatures()" style="width:180px">
+          <option value="">ALL TRAINERS</option>
+        </select>
+      </div>
+      <div class="party" id="tbl-cr"></div>
+    </div>
+
+    <!-- ── WILD ── -->
+    <div id="page-wild" class="page">
+      <div class="ph">
+        <div><div class="ph-title">◉ WILD ENCOUNTERS</div>
+        <div class="ph-count" id="cnt-wl"></div></div>
+        <button class="btn btn-p btn-sm" onclick="openModal('wild')">＋ NEW WILD</button>
+      </div>
+      <div class="wild-grid" id="tbl-wl"></div>
+    </div>
+
+    <!-- ── AUDIT ── -->
+    <div id="page-audit" class="page">
+      <div class="ph">
+        <div><div class="ph-title">◉ BATTLE LOG</div>
+        <div class="ph-count" id="cnt-au"></div></div>
+        <button class="btn btn-p btn-sm" onclick="loadAudit()">↻ REFRESH</button>
+      </div>
+      <div class="pbox" id="tbl-au"></div>
+    </div>
+
+    <!-- ── SHOP ── -->
+    <div id="page-shop" class="page">
+      <div class="ph">
+        <div><div class="ph-title">🛒 POKE SHOP</div>
+        <div class="ph-count">Buy items for your adventure!</div></div>
+      </div>
+      <!-- Trainer selector -->
+      <div class="fg" style="margin-bottom:12px">
+        <label class="fl">TRAINER</label>
+        <select class="gs" id="shop-trainer" onchange="loadInventory()"></select>
+      </div>
+      <!-- Shop items -->
+      <div class="section-label" style="font-size:12px;color:#d8b030;margin-bottom:4px">🏪 ITEMS FOR SALE</div>
+      <div class="shop-grid" id="shop-items"></div>
+      <!-- Inventory -->
+      <div class="section-label" style="font-size:12px;color:var(--blue);margin-top:16px;margin-bottom:4px">🎒 YOUR INVENTORY</div>
+      <div class="inv-grid" id="shop-inv"></div>
+    </div>
+
+    <!-- ── BATTLE ── -->
+    <div id="page-battle" class="page">
+      <div class="ph">
+        <div><div class="ph-title">◉ BATTLE ARENA</div>
+        <div class="ph-count">Choose fighters and start!</div></div>
+      </div>
+      <div class="arena">
+        <div class="arena-setup">
+          <div class="fg" style="margin-bottom:0">
+            <label class="fl">MODE</label>
+            <select class="gs" id="b-mode" onchange="updateBattleUI()">
+              <option value="pvp">TRAINER vs TRAINER</option>
+              <option value="wild">TRAINER vs WILD</option>
+            </select>
+          </div>
+          <div class="fg" style="margin-bottom:0">
+            <label class="fl">PLAYER</label>
+            <select class="gs" id="b-player"></select>
+          </div>
+          <div class="fg" style="margin-bottom:0" id="b-rival-wrap">
+            <label class="fl">RIVAL</label>
+            <select class="gs" id="b-rival"></select>
+          </div>
+          <div class="fg" style="margin-bottom:0;display:none" id="b-wild-wrap">
+            <label class="fl">WILD</label>
+            <select class="gs" id="b-wild"></select>
+          </div>
+          <button class="btn btn-p" onclick="startBattle()" id="b-start">⚔️ FIGHT!</button>
+        </div>
+        <div class="arena-field" id="arena-field" style="display:none">
+          <div class="arena-side pbox" id="arena-p"></div>
+          <div class="arena-vs">⚔️<br>VS</div>
+          <div class="arena-side pbox" id="arena-r"></div>
+        </div>
+        <div class="pbox battle-log" id="b-log" style="display:none"></div>
+        <!-- Wild encounter action buttons -->
+        <div id="b-wild-actions" style="display:none;margin-top:12px;display:none;gap:10px;flex-wrap:wrap;justify-content:center">
+          <button class="btn btn-p" onclick="wildAction('attack')">⚔️ ATTACK</button>
+          <button class="btn btn-p" style="background:#c03020" onclick="wildAction('catch')">🔴 CATCH</button>
+          <button class="btn btn-c" onclick="wildAction('flee')">🏃 FLEE</button>
+        </div>
+        <div class="battle-result pbox" id="b-result" style="display:none"></div>
+      </div>
+    </div>
+
+  </div><!-- /content -->
+
+  <!-- ═══════ SIDEBAR ════════════════════════════════════ -->
+  <div class="sidebar">
+    <div class="sb-title">▶ DATABASE STATUS</div>
+    <div class="sb-item"><strong>TRAINERS</strong><span id="sb-tr">–</span></div>
+    <div class="sb-item"><strong>MOVES</strong><span id="sb-mv">–</span></div>
+    <div class="sb-item"><strong>CREATURES</strong><span id="sb-cr">–</span></div>
+    <div class="sb-item"><strong>WILD</strong><span id="sb-wl">–</span></div>
+    <div class="sb-item" style="margin-top:auto">
+      <strong style="color:#38d038">● ONLINE</strong>
+      <span>MySQL 8.0</span>
+    </div>
+  </div>
+
+</div><!-- /game-body -->
+
+<!-- ══════════════════ BOTTOM MSG BAR ═══════════════════ -->
+<div class="msg-bar pbox" id="msg-bar">
+  <span class="msg-cursor">▶</span>
+  <span id="msg-text">POKERAIN loaded. Choose an action.</span>
+  <div class="msg-ab">
+    <div class="ab-btn ab-a" onclick="loadAll()" title="Refresh">A</div>
+    <div class="ab-btn ab-b" onclick="closeModal()" title="Close">B</div>
+  </div>
+</div>
+
+<!-- ══════════════════ MODALS ════════════════════════════ -->
+<div class="ov" id="overlay" onclick="maybeClose(event)">
+
+  <!-- NEW TRAINER -->
+  <div class="dialog pbox" id="m-trainer" style="display:none">
+    <div class="dl-title">👤 NEW TRAINER</div>
+    <div class="fg"><label class="fl">TRAINER NAME</label><input class="fi" id="f-tr-name" placeholder="Enter name..."></div>
+    <div class="fg"><label class="fl">MONEY (¥)</label><input class="fi" id="f-tr-money" type="number" placeholder="3000"></div>
+    <div class="dl-actions">
+      <button class="btn btn-c btn-sm" onclick="closeModal()">B CANCEL</button>
+      <button class="btn btn-p btn-sm" onclick="addTrainer()">A CONFIRM</button>
+    </div>
+  </div>
+
+  <!-- NEW MOVE -->
+  <div class="dialog pbox" id="m-move" style="display:none">
+    <div class="dl-title">⚔️ NEW MOVE</div>
+    <div class="fg"><label class="fl">MOVE NAME</label><input class="fi" id="f-mv-name" placeholder="Enter name..."></div>
+    <div class="fr">
+      <div class="fg"><label class="fl">POWER</label><input class="fi" id="f-mv-pow" type="number" placeholder="90"></div>
+      <div class="fg"><label class="fl">ACCURACY %</label><input class="fi" id="f-mv-acc" type="number" placeholder="100"></div>
+    </div>
+    <div class="fg"><label class="fl">PP</label><input class="fi" id="f-mv-pp" type="number" placeholder="15"></div>
+    <div class="fr">
+      <div class="fg"><label class="fl">TYPE</label>
+        <select class="fs" id="f-mv-type">
+          <option>FIRE</option><option>WATER</option><option>GRASS</option>
+          <option>ELECTRIC</option><option>NORMAL</option><option>ICE</option>
+          <option>POISON</option><option>PSYCHIC</option>
+        </select>
+      </div>
+      <div class="fg"><label class="fl">CATEGORY</label>
+        <select class="fs" id="f-mv-cat"><option>PHYSICAL</option><option>SPECIAL</option><option>STATUS</option></select>
+      </div>
+    </div>
+    <div class="fg"><label class="fl">SIDE EFFECT</label>
+      <select class="fs" id="f-mv-se">
+        <option>NONE</option><option>BURN</option><option>POISON</option><option>PARALYSIS</option><option>SLEEP</option>
+      </select>
+    </div>
+    <div class="dl-actions">
+      <button class="btn btn-c btn-sm" onclick="closeModal()">B CANCEL</button>
+      <button class="btn btn-p btn-sm" onclick="addMove()">A CONFIRM</button>
+    </div>
+  </div>
+
+  <!-- NEW WILD -->
+  <div class="dialog pbox" id="m-wild" style="display:none">
+    <div class="dl-title">🌿 NEW WILD CREATURE</div>
+    <div class="fg"><label class="fl">NAME</label><input class="fi" id="f-wl-name" placeholder="Species name..."></div>
+    <div class="fr">
+      <div class="fg"><label class="fl">MAX HP</label><input class="fi" id="f-wl-hp" type="number" placeholder="80"></div>
+      <div class="fg"><label class="fl">LEVEL</label><input class="fi" id="f-wl-lvl" type="number" placeholder="10"></div>
+    </div>
+    <div class="fr">
+      <div class="fg"><label class="fl">ATTACK</label><input class="fi" id="f-wl-atk" type="number" placeholder="50"></div>
+      <div class="fg"><label class="fl">DEFENSE</label><input class="fi" id="f-wl-def" type="number" placeholder="40"></div>
+    </div>
+    <div class="fr">
+      <div class="fg"><label class="fl">SPEED</label><input class="fi" id="f-wl-spd" type="number" placeholder="35"></div>
+      <div class="fg"><label class="fl">CATCH RATE</label><input class="fi" id="f-wl-cr" type="number" step="0.05" min="0" max="1" placeholder="0.5"></div>
+    </div>
+    <div class="fg"><label class="fl">TYPE</label>
+      <select class="fs" id="f-wl-type">
+        <option>FIRE</option><option>WATER</option><option>GRASS</option>
+        <option>ELECTRIC</option><option>NORMAL</option><option>ICE</option>
+        <option>POISON</option><option>PSYCHIC</option>
+      </select>
+    </div>
+    <div class="dl-actions">
+      <button class="btn btn-c btn-sm" onclick="closeModal()">B CANCEL</button>
+      <button class="btn btn-p btn-sm" onclick="addWild()">A CONFIRM</button>
+    </div>
+  </div>
+
+  <!-- LEARN MOVE -->
+  <div class="dialog pbox" id="m-learnmove" style="display:none">
+    <div class="dl-title">📚 LEARN MOVE</div>
+    <div class="fg"><label class="fl">CREATURE</label>
+      <div id="f-lm-creature" style="font-size:10px;color:var(--black)"></div></div>
+    <div class="fg"><label class="fl">SELECT MOVE</label>
+      <select class="fs" id="f-lm-move"></select></div>
+    <div class="dl-actions">
+      <button class="btn btn-c btn-sm" onclick="closeModal()">B CANCEL</button>
+      <button class="btn btn-p btn-sm" onclick="learnMove()">A LEARN</button>
+    </div>
+  </div>
+
+</div>
+
+<div class="tc3" id="tc"></div>
+
+<script>
+// ── State ────────────────────────────────────────────────────────────────
+const S = { trainers:[], moves:[], creatures:[], wild:[], audit:[] };
+
+const SPRITES = ['🧑‍🦰','👦','👧','🧙','🥷','🧝','🧑‍🏫','👨‍🔬'];
+const TYPE_COL = {
+  FIRE:'#f03820',WATER:'#2870f8',GRASS:'#38a040',ELECTRIC:'#f8c030',
+  NORMAL:'#a0a080',ICE:'#60c8d0',POISON:'#8030a0',PSYCHIC:'#e03070'
+};
+
+// ── Navigation ───────────────────────────────────────────────────────────
+function nav(page, el) {
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  el.classList.add('active');
+  document.getElementById('page-'+page).classList.add('active');
+  if (page === 'audit') loadAudit();
+  setMsg(pageMsgs[page] || 'Choose an action.');
+}
+const pageMsgs = {
+  dashboard:'WORLD MAP – Overview of all trainers and activity.',
+  trainers: 'TRAINER DATA – View, add and delete trainers.',
+  moves:    'MOVE LIST – All registered battle moves.',
+  creatures:'PARTY SCREEN – Trainer creature roster.',
+  wild:     'WILD ENCOUNTERS – Uncaught creatures in the area.',
+  battle:   'BATTLE ARENA – Choose fighters and start a battle!',
+  shop:     'POKE SHOP – Buy Poke Balls, Potions and more!',
+  audit:    'BATTLE LOG – Record of all actions performed.'
+};
+
+let _msgIv = null;
+function setMsg(txt) {
+  if (_msgIv) clearInterval(_msgIv);
+  const el = document.getElementById('msg-text');
+  el.textContent = '';
+  let i = 0;
+  _msgIv = setInterval(() => {
+    el.textContent += txt[i++];
+    if (i >= txt.length) { clearInterval(_msgIv); _msgIv = null; }
+  }, 18);
+}
+
+// ── API ──────────────────────────────────────────────────────────────────
+async function api(url, opts) {
+  const r = await fetch(url, opts);
+  if (!r.ok) { const j = await r.json().catch(()=>({})); throw new Error(j.error||r.status); }
+  return r.json();
+}
+
+async function loadAll() {
+  try {
+    const [tr,mv,cr,wl,shop] = await Promise.all([
+      api('/api/trainers'), api('/api/moves'), api('/api/creatures'), api('/api/wild'), api('/api/shop')
+    ]);
+    S.trainers=tr; S.moves=mv; S.creatures=cr; S.wild=wl; S.shop=shop;
+    renderAll();
+    setMsg(`Loaded: ${tr.length} trainers, ${cr.length} creatures, ${wl.length} wild.`);
+  } catch(e) { toast('Connection error: '+e.message,'err'); }
+}
+
+async function loadAudit() {
+  try { S.audit = await api('/api/audit'); renderAudit(); }
+  catch(e) { toast('Audit error','err'); }
+}
+
+// ── Render ───────────────────────────────────────────────────────────────
+function renderAll() {
+  // sidebar
+  document.getElementById('sb-tr').textContent = ' × '+S.trainers.length;
+  document.getElementById('sb-mv').textContent = ' × '+S.moves.length;
+  document.getElementById('sb-cr').textContent = ' × '+S.creatures.length;
+  document.getElementById('sb-wl').textContent = ' × '+S.wild.length;
+  renderDash(); renderTrainers(); renderMoves(); renderCreatures(); renderWild(); renderShop();
+  populateBattleSelectors();
+}
+
+// Dashboard
+function renderDash() {
+  document.getElementById('s-tr').textContent = S.trainers.length;
+  document.getElementById('s-mv').textContent = S.moves.length;
+  document.getElementById('s-cr').textContent = S.creatures.length;
+  document.getElementById('s-wl').textContent = S.wild.length;
+  document.getElementById('d-sub').textContent = `${S.trainers.length} trainers active · ${S.wild.length} wild encounters`;
+
+  document.getElementById('d-trainers').innerHTML = S.trainers.length === 0
+    ? `<div class="empty pbox"><div class="empty-ic">👤</div>No trainers registered</div>`
+    : S.trainers.map((t,i) => `
+        <div class="tc pbox">
+          <div class="tc-sprite">${SPRITES[i % SPRITES.length]}</div>
+          <div class="tc-name">${x(t.name)}</div>
+          <div class="tc-money">¥${t.money.toLocaleString()}</div>
+          <div class="tc-id">ID #${t.id}</div>
+        </div>`).join('');
+
+  // Audit preview
+  if (S.audit.length > 0) {
+    renderAuditRows(document.getElementById('d-audit'), S.audit.slice(0,6));
+  } else {
+    api('/api/audit').then(d => { S.audit=d; renderAuditRows(document.getElementById('d-audit'), d.slice(0,6)); }).catch(()=>{});
+  }
+}
+
+function renderAuditRows(el, rows) {
+  el.innerHTML = rows.length === 0
+    ? `<div class="empty" style="padding:20px;font-size:10px">No activity yet</div>`
+    : rows.map((a,i) => `<div class="log-entry">
+        <span class="log-n">${i+1}</span>
+        <span class="log-action ${auditCls(a.action)}">${a.action}</span>
+        <span class="log-time">${a.timestamp}</span>
+      </div>`).join('');
+}
+
+// Trainers
+function renderTrainers() {
+  const q = (document.getElementById('q-tr')?.value||'').toLowerCase();
+  const d = S.trainers.filter(t=>t.name.toLowerCase().includes(q));
+  document.getElementById('cnt-tr').textContent = d.length+' TRAINERS';
+
+  const sel = document.getElementById('flt-tr');
+  if (sel) {
+    const cur=sel.value;
+    sel.innerHTML='<option value="">ALL TRAINERS</option>'+
+      S.trainers.map(t=>`<option value="${t.id}"${t.id==cur?' selected':''}>${x(t.name)} #${t.id}</option>`).join('');
+  }
+
+  document.getElementById('tbl-tr').innerHTML = d.length===0 ? emptyRow(5,'👤','NO TRAINERS FOUND') :
+    d.map((t,i)=>`<tr>
+      <td class="idc">#${String(t.id).padStart(3,'0')}</td>
+      <td><strong>${x(t.name)}</strong></td>
+      <td class="mc">¥${t.money.toLocaleString()}</td>
+      <td><button class="btn btn-p btn-sm" onclick="healTrainer(${t.id})">❤️ HEAL</button></td>
+      <td><button class="btn btn-d btn-sm" onclick="delTrainer(${t.id})">✕ DEL</button></td>
+    </tr>`).join('');
+}
+
+// Moves
+function renderMoves() {
+  const q = (document.getElementById('q-mv')?.value||'').toLowerCase();
+  const d = S.moves.filter(m=>m.name.toLowerCase().includes(q));
+  document.getElementById('cnt-mv').textContent = d.length+' MOVES';
+
+  document.getElementById('tbl-mv').innerHTML = d.length===0 ? emptyRow(9,'⚔️','NO MOVES FOUND') :
+    d.map(m=>`<tr>
+      <td class="idc">#${String(m.id).padStart(3,'0')}</td>
+      <td><strong>${x(m.name)}</strong></td>
+      <td style="color:#804800;font-family:var(--vt);font-size:16px">${m.power||'–'}</td>
+      <td style="font-family:var(--vt);font-size:15px">${m.accuracy}%</td>
+      <td style="color:#4060a0;font-family:var(--vt);font-size:15px">${m.pp}/${m.maxPp}</td>
+      <td><span class="tb type-${m.type}">${m.type}</span></td>
+      <td style="font-size:9px;color:#606040">${m.category}</td>
+      <td style="font-size:9px">${m.sideEffect!=='NONE'?`<span style="color:#e03820">${m.sideEffect}</span>`:'–'}</td>
+      <td><button class="btn btn-d btn-sm" onclick="delMove(${m.id})">✕</button></td>
+    </tr>`).join('');
+}
+
+// Creatures (party cards)
+function renderCreatures() {
+  document.getElementById('cnt-cr').textContent = S.creatures.length+' CREATURES';
+  renderCreaturesData(S.creatures);
+}
+
+function fetchCreatures() {
+  const tid = document.getElementById('flt-tr')?.value;
+  const url = tid ? `/api/creatures/trainer/${tid}` : '/api/creatures';
+  api(url).then(renderCreaturesData).catch(e=>toast(e.message,'err'));
+}
+
+function renderCreaturesData(data) {
+  document.getElementById('cnt-cr').textContent = data.length+' CREATURES';
+  const el = document.getElementById('tbl-cr');
+  if (data.length===0) { el.innerHTML=`<div class="empty pbox" style="grid-column:1/-1"><div class="empty-ic">🐾</div>NO CREATURES FOUND</div>`; return; }
+  el.innerHTML = data.map(c => {
+    const col = TYPE_COL[c.type] || '#888';
+    const hp = c.hp != null ? c.hp : c.maxHp;
+    const hpPct = Math.round(hp / c.maxHp * 100);
+    const hpCls = hpPct > 50 ? 'hp-g' : hpPct > 20 ? 'hp-y' : 'hp-r';
+    return `<div class="party-card pbox">
+      <div class="party-row">
+        <div class="party-ball" style="background:${col}20;border-color:${col}">
+          <span style="font-size:18px">🐣</span>
+        </div>
+        <div class="party-info">
+          <div class="party-name">${x(c.nickname||c.name)}</div>
+          <div class="party-species">${c.nickname&&c.nickname!==c.name?x(c.name):''}</div>
+          <span class="tb type-${c.type}">${c.type}</span>
+        </div>
+        <div style="text-align:right">
+          <div class="party-lv" style="font-size:18px">Lv.${c.level}</div>
+          <div style="font-size:9px;color:#606040;margin-top:2px">#${c.id}</div>
+        </div>
+      </div>
+      <div style="margin-top:8px">
+        <div class="hp-label"><span>HP</span><span style="font-family:var(--vt);font-size:14px">${hp}/${c.maxHp}</span></div>
+        <div class="hp-wrap"><div class="hp-fill ${hpCls}" style="width:${hpPct}%"></div></div>
+      </div>
+      <div class="party-stats">
+        <div class="pstat"><div class="pstat-lbl">ATK</div><div class="pstat-val">${c.attack}</div></div>
+        <div class="pstat"><div class="pstat-lbl">DEF</div><div class="pstat-val">${c.defense}</div></div>
+        <div class="pstat"><div class="pstat-lbl">SPD</div><div class="pstat-val">${c.speed}</div></div>
+        <div class="pstat"><div class="pstat-lbl">LYL</div><div class="pstat-val">${c.loyalty}</div></div>
+      </div>
+      <div class="gst" style="margin:10px 0 4px;font-size:9px">MOVES</div>
+      <div class="cmoves" id="cmoves-${c.id}"><span style="font-size:8px;color:#8898d8">Loading...</span></div>
+      <div style="margin-top:10px;display:flex;gap:6px;justify-content:flex-end;flex-wrap:wrap">
+        <button class="btn btn-p btn-sm" onclick="openLearnMove(${c.id},'${x(c.nickname||c.name)}')">+ LEARN</button>
+        <button class="btn btn-d btn-sm" onclick="delCreature(${c.id})">✕ RELEASE</button>
+      </div>
+    </div>`;
+  }).join('');
+  // load moves for each creature
+  data.forEach(c => loadCreatureMoves(c.id));
+}
+
+// Wild (Pokedex style)
+function renderWild() {
+  document.getElementById('cnt-wl').textContent = S.wild.length+' ENCOUNTERS';
+  const el = document.getElementById('tbl-wl');
+  if (S.wild.length===0) { el.innerHTML=`<div class="empty pbox" style="grid-column:1/-1"><div class="empty-ic">🌿</div>NO WILD CREATURES</div>`; return; }
+
+  const wildSprites = ['🦊','🐠','🦎','⚡','🐦','🐧','🐸','🦋'];
+  el.innerHTML = S.wild.map((w,i) => {
+    const cr = w.catchRate;
+    const crCls = cr>=0.7?'catch-g':cr>=0.4?'catch-y':'catch-r';
+    return `<div class="wild-card pbox">
+      <div class="wild-header">
+        <div class="wild-num" style="font-size:16px">${wildSprites[i%wildSprites.length]}</div>
+        <div>
+          <div class="wild-name">${x(w.name)}</div>
+          <span class="tb type-${w.type}">${w.type}</span>
+        </div>
+        <div style="margin-left:auto;text-align:right">
+          <div style="font-size:18px;color:#4060a0;font-family:var(--vt)">Lv.${w.level}</div>
+          <div style="font-size:9px;color:#606040">#${w.id}</div>
+        </div>
+      </div>
+      <div style="font-size:9px;color:#605840;margin-bottom:4px">CATCH RATE</div>
+      <div class="catch-wrap">
+        <div class="catch-bar-bg" style="flex:1"><div class="catch-bar-fill ${crCls}" style="width:${(cr*100).toFixed(0)}%"></div></div>
+        <div class="catch-pct">${(cr*100).toFixed(0)}%</div>
+      </div>
+      <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:4px;margin-top:8px">
+        <div class="pstat"><div class="pstat-lbl">HP</div><div class="pstat-val">${w.maxHp}</div></div>
+        <div class="pstat"><div class="pstat-lbl">ATK</div><div class="pstat-val">${w.attack}</div></div>
+        <div class="pstat"><div class="pstat-lbl">DEF</div><div class="pstat-val">${w.defense}</div></div>
+        <div class="pstat"><div class="pstat-lbl">SPD</div><div class="pstat-val">${w.speed}</div></div>
+      </div>
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-top:10px">
+        <div style="font-size:10px">${w.caught?'<span style="color:#28a030">● CAUGHT</span>':'<span style="color:#a04020">○ WILD</span>'}</div>
+        <button class="btn btn-d btn-sm" onclick="delWild(${w.id})">✕ REMOVE</button>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+// Audit
+function renderAudit() {
+  document.getElementById('cnt-au').textContent = S.audit.length+' ENTRIES';
+  const el = document.getElementById('tbl-au');
+  if (S.audit.length===0) { el.innerHTML=`<div class="empty" style="font-size:10px;padding:30px">No log entries yet</div>`; return; }
+  renderAuditRows(el, S.audit);
+}
+
+function auditCls(a) {
+  if(/DELETE/.test(a)) return 'la-del';
+  if(/UPDATE/.test(a)) return 'la-upd';
+  if(/BATTLE/.test(a)) return 'la-bat';
+  if(/WILD|ENCOUNTER/.test(a)) return 'la-wld';
+  return 'la-ok';
+}
+
+// ── CRUD ─────────────────────────────────────────────────────────────────
+async function addTrainer() {
+  const name=document.getElementById('f-tr-name').value.trim();
+  const money=parseInt(document.getElementById('f-tr-money').value)||0;
+  if(!name){toast('ENTER A NAME!','err');return;}
+  try {
+    await api('/api/trainers',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({name,money})});
+    closeModal(); toast(`${name} joined the game!`,'ok'); await loadAll();
+  } catch(e){toast('ERROR: '+e.message,'err');}
+}
+async function delTrainer(id) {
+  if(!confirm(`DELETE trainer #${id}?`))return;
+  try{await api('/api/trainers/'+id,{method:'DELETE'});toast('Trainer removed!','ok');await loadAll();}
+  catch(e){toast('ERROR: '+e.message,'err');}
+}
+async function addMove() {
+  const body={
+    name:document.getElementById('f-mv-name').value.trim(),
+    power:parseInt(document.getElementById('f-mv-pow').value)||0,
+    accuracy:parseInt(document.getElementById('f-mv-acc').value)||100,
+    pp:parseInt(document.getElementById('f-mv-pp').value)||10,
+    type:document.getElementById('f-mv-type').value,
+    category:document.getElementById('f-mv-cat').value,
+    sideEffect:document.getElementById('f-mv-se').value
+  };
+  if(!body.name){toast('ENTER A NAME!','err');return;}
+  try{
+    await api('/api/moves',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
+    closeModal();toast(`Move ${body.name} learned!`,'ok');await loadAll();
+  }catch(e){toast('ERROR: '+e.message,'err');}
+}
+async function delMove(id) {
+  if(!confirm(`DELETE move #${id}?`))return;
+  try{await api('/api/moves/'+id,{method:'DELETE'});toast('Move forgotten!','ok');await loadAll();}
+  catch(e){toast('ERROR','err');}
+}
+async function delCreature(id) {
+  if(!confirm(`RELEASE creature #${id}?`))return;
+  try{await api('/api/creatures/'+id,{method:'DELETE'});toast('Creature released!','ok');await loadAll();fetchCreatures();}
+  catch(e){toast('ERROR','err');}
+}
+async function addWild() {
+  const body={
+    name:document.getElementById('f-wl-name').value.trim(),
+    maxHp:parseInt(document.getElementById('f-wl-hp').value)||50,
+    attack:parseInt(document.getElementById('f-wl-atk').value)||40,
+    defense:parseInt(document.getElementById('f-wl-def').value)||35,
+    speed:parseInt(document.getElementById('f-wl-spd').value)||40,
+    level:parseInt(document.getElementById('f-wl-lvl').value)||5,
+    type:document.getElementById('f-wl-type').value,
+    catchRate:parseFloat(document.getElementById('f-wl-cr').value)||0.5
+  };
+  if(!body.name){toast('ENTER A NAME!','err');return;}
+  try{
+    await api('/api/wild',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
+    closeModal();toast(`Wild ${body.name} appeared!`,'ok');await loadAll();
+  }catch(e){toast('ERROR: '+e.message,'err');}
+}
+async function delWild(id){
+  if(!confirm(`REMOVE wild creature #${id}?`))return;
+  try{await api('/api/wild/'+id,{method:'DELETE'});toast('Creature fled!','ok');await loadAll();}
+  catch(e){toast('ERROR','err');}
+}
+
+// ── Modal ─────────────────────────────────────────────────────────────────
+function openModal(type){
+  document.getElementById('overlay').classList.add('open');
+  ['trainer','move','wild','learnmove'].forEach(t=>
+    document.getElementById('m-'+t).style.display=t===type?'block':'none');
+}
+function closeModal(){document.getElementById('overlay').classList.remove('open');}
+function maybeClose(e){if(e.target===document.getElementById('overlay'))closeModal();}
+
+// ── Toast ─────────────────────────────────────────────────────────────────
+function toast(msg,type='ok'){
+  const c=document.getElementById('tc');
+  const el=document.createElement('div');
+  el.className='toast '+type;
+  el.textContent=(type==='ok'?'▶ ':'✕ ')+msg;
+  c.appendChild(el);
+  setMsg(msg);
+  setTimeout(()=>el.remove(),3000);
+}
+
+// ── Helpers ───────────────────────────────────────────────────────────────
+function x(s){if(!s)return'';const d=document.createElement('div');d.textContent=s;return d.innerHTML;}
+function emptyRow(cols,ic,msg){return`<tr><td colspan="${cols}"><div class="empty">${ic} ${msg}</div></td></tr>`;}
+
+// ── Heal ─────────────────────────────────────────────────────────────────
+async function healTrainer(id) {
+  try {
+    const r = await api(`/api/heal/${id}`, {method:'POST'});
+    toast(`Healed ${r.healed} creatures!`, 'ok');
+    await loadAll();
+  } catch(e) { toast('Heal error: '+e.message, 'err'); }
+}
+
+// ── Creature Moves ───────────────────────────────────────────────────────
+let learnCreatureId = 0;
+
+async function loadCreatureMoves(cid) {
+  const el = document.getElementById('cmoves-'+cid);
+  if (!el) return;
+  try {
+    const moves = await api('/api/cmoves/'+cid);
+    if (moves.length === 0) {
+      el.innerHTML = '<span style="font-size:8px;color:#8898d8">(no moves)</span>';
+    } else {
+      el.innerHTML = moves.map(m =>
+        `<div class="cmove"><span class="tb type-${m.type}" style="font-size:7px;padding:1px 5px">${m.type}</span> ${x(m.name)} <span class="cmove-x" onclick="forgetMove(${cid},${m.id})">✕</span></div>`
+      ).join('');
+    }
+  } catch(e) {
+    el.innerHTML = '<span style="font-size:8px;color:var(--red)">Error</span>';
+  }
+}
+
+function openLearnMove(cid, name) {
+  learnCreatureId = cid;
+  document.getElementById('f-lm-creature').textContent = name + ' #' + cid;
+  const sel = document.getElementById('f-lm-move');
+  sel.innerHTML = S.moves.map(m => `<option value="${m.id}">${m.name} (${m.type} PWR:${m.power})</option>`).join('');
+  openModal('learnmove');
+}
+
+async function learnMove() {
+  const moveId = parseInt(document.getElementById('f-lm-move').value);
+  if (!moveId) { toast('Select a move!','err'); return; }
+  try {
+    await api('/api/cmoves/'+learnCreatureId, {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({moveId})});
+    closeModal();
+    toast('Move learned!','ok');
+    loadCreatureMoves(learnCreatureId);
+  } catch(e) { toast('Error: '+e.message,'err'); }
+}
+
+async function forgetMove(cid, mid) {
+  if (!confirm('Forget this move?')) return;
+  try {
+    await api(`/api/cmoves/${cid}/${mid}`, {method:'DELETE'});
+    toast('Move forgotten!','ok');
+    loadCreatureMoves(cid);
+  } catch(e) { toast('Error: '+e.message,'err'); }
+}
+
+// ── Shop & Inventory ─────────────────────────────────────────────────────
+function renderShop() {
+  // populate trainer selector
+  const sel = document.getElementById('shop-trainer');
+  if (!sel) return;
+  sel.innerHTML = S.trainers.map(t => `<option value="${t.id}">${x(t.name)} #${t.id} (${t.money}¥)</option>`).join('');
+
+  // render shop items
+  const ITEM_ICONS = {'Poke Ball':'🔴','Great Ball':'🔵','Ultra Ball':'🟡','Potion':'💚','Super Potion':'💜','Revive':'⭐'};
+  const el = document.getElementById('shop-items');
+  el.innerHTML = (S.shop||[]).map(it => `<div class="shop-card">
+    <div style="font-size:22px">${ITEM_ICONS[it.name]||'📦'}</div>
+    <div class="shop-name">${x(it.name)}</div>
+    <div class="shop-cat shop-cat-${it.category}">${it.category}</div>
+    <div class="shop-desc">${x(it.description)}</div>
+    <div class="shop-price">${it.price}¥</div>
+    <div style="margin-top:8px;display:flex;gap:4px;align-items:center">
+      <button class="btn btn-p btn-sm" onclick="buyItem(${it.id},1)">BUY ×1</button>
+      <button class="btn btn-c btn-sm" onclick="buyItem(${it.id},5)">×5</button>
+    </div>
+  </div>`).join('');
+
+  loadInventory();
+}
+
+async function loadInventory() {
+  const tid = document.getElementById('shop-trainer')?.value;
+  const el = document.getElementById('shop-inv');
+  if (!tid || !el) return;
+  try {
+    const inv = await api(`/api/inventory/${tid}`);
+    if (inv.length === 0) {
+      el.innerHTML = '<div class="empty pbox" style="grid-column:1/-1"><div class="empty-ic">🎒</div>NO ITEMS YET</div>';
+      return;
+    }
+    const ITEM_ICONS = {'Poke Ball':'🔴','Great Ball':'🔵','Ultra Ball':'🟡','Potion':'💚','Super Potion':'💜','Revive':'⭐'};
+    el.innerHTML = inv.map(it => `<div class="inv-card">
+      <div style="font-size:20px">${ITEM_ICONS[it.name]||'📦'}</div>
+      <div>
+        <div class="inv-name">${x(it.name)}</div>
+        <div class="inv-qty">×${it.quantity}</div>
+      </div>
+    </div>`).join('');
+  } catch(e) { el.innerHTML = '<span style="color:var(--red);font-size:10px">Error loading inventory</span>'; }
+}
+
+async function buyItem(itemId, qty) {
+  const tid = parseInt(document.getElementById('shop-trainer')?.value);
+  if (!tid) { toast('Select a trainer first!','err'); return; }
+  try {
+    const r = await api('/api/shop', {method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({trainerId: tid, itemId, quantity: qty})});
+    toast(`Bought ${r.qty}× ${r.item}! Spent ${r.spent}¥ (${r.remaining}¥ left)`,'ok');
+    await loadAll();
+  } catch(e) { toast('Shop error: '+e.message,'err'); }
+}
+
+// ── Battle ───────────────────────────────────────────────────────────────
+function populateBattleSelectors() {
+  const pSel = document.getElementById('b-player');
+  const rSel = document.getElementById('b-rival');
+  const wSel = document.getElementById('b-wild');
+  if (!pSel) return;
+  const opts = S.trainers.map(t => `<option value="${t.id}">${x(t.name)} #${t.id}</option>`).join('');
+  pSel.innerHTML = opts;
+  rSel.innerHTML = opts;
+  wSel.innerHTML = S.wild.map(w => `<option value="${w.id}">${x(w.name)} Lv.${w.level} (${w.type})</option>`).join('');
+}
+
+function updateBattleUI() {
+  const mode = document.getElementById('b-mode').value;
+  document.getElementById('b-rival-wrap').style.display = mode==='pvp' ? '' : 'none';
+  document.getElementById('b-wild-wrap').style.display = mode==='wild' ? '' : 'none';
+}
+
+async function startBattle() {
+  const mode = document.getElementById('b-mode').value;
+  const btn = document.getElementById('b-start');
+  btn.disabled = true; btn.textContent = '⏳ FIGHTING...';
+
+  const logEl = document.getElementById('b-log');
+  const resEl = document.getElementById('b-result');
+  const fieldEl = document.getElementById('arena-field');
+  const wildActs = document.getElementById('b-wild-actions');
+  logEl.style.display = 'none'; logEl.innerHTML = '';
+  resEl.style.display = 'none';
+  fieldEl.style.display = 'none';
+  wildActs.style.display = 'none';
+
+  if (mode === 'pvp') {
+    // PvP: auto-run intreaga lupta
+    const body = { mode:'pvp', playerId: parseInt(document.getElementById('b-player').value), rivalId: parseInt(document.getElementById('b-rival').value) };
+    if (body.playerId === body.rivalId) {
+      toast("A trainer can't battle themselves!",'err'); btn.disabled = false; btn.textContent = '⚔️ FIGHT!'; return;
+    }
+    try {
+      const r = await api('/api/battle', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(body)});
+      fieldEl.style.display = 'flex';
+      document.getElementById('arena-p').innerHTML = `<div class="arena-side-title" style="color:var(--blue)">👤 ${x(r.player)}</div>`;
+      document.getElementById('arena-r').innerHTML = `<div class="arena-side-title" style="color:var(--red)">👤 ${x(r.rival)}</div>`;
+      logEl.style.display = 'block';
+      await animateLog(r.log, logEl);
+      showBattleResult(r.result);
+      setMsg(`Battle over! ${r.player} vs ${r.rival}: ${r.result}`);
+      await loadAll();
+    } catch(e) { toast('Battle error: ' + e.message, 'err'); }
+    btn.disabled = false; btn.textContent = '⚔️ FIGHT!';
+
+  } else {
+    // Wild: interactiv – prima tura (init)
+    wildState = {
+      trainerId: parseInt(document.getElementById('b-player').value),
+      wildId: parseInt(document.getElementById('b-wild').value),
+      wildHp: 0, playerHp: 0, wildMaxHp: 0, playerMaxHp: 0,
+      wildName: '', playerName: ''
+    };
+    // prima tura e attack automat pt a obtine info
+    try {
+      const r = await sendWildTurn('attack');
+      wildState.wildHp = r.wildHp; wildState.playerHp = r.playerHp;
+      wildState.wildMaxHp = r.wildMaxHp; wildState.playerMaxHp = r.playerMaxHp;
+      wildState.wildName = r.wildName; wildState.playerName = r.playerName;
+
+      fieldEl.style.display = 'flex';
+      updateArenaHP();
+      logEl.style.display = 'block';
+      logEl.innerHTML = '';
+      appendBattleLog(r.log);
+
+      if (r.done) {
+        showBattleResult(r.result);
+        wildActs.style.display = 'none';
+        btn.disabled = false; btn.textContent = '⚔️ FIGHT!';
+      } else {
+        wildActs.style.display = 'flex';
+        setMsg('Choose your action: ATTACK, CATCH, or FLEE!');
+      }
+    } catch(e) { toast('Battle error: ' + e.message, 'err'); btn.disabled = false; btn.textContent = '⚔️ FIGHT!'; }
+  }
+}
+
+// ── Wild encounter state ─────────────────────────────────────────────────
+let wildState = null;
+
+async function sendWildTurn(action) {
+  return api('/api/battle', {method:'POST', headers:{'Content-Type':'application/json'},
+    body: JSON.stringify({
+      mode: 'wild-turn', trainerId: wildState.trainerId, wildId: wildState.wildId,
+      action, wildHp: wildState.wildHp, playerHp: wildState.playerHp
+    })});
+}
+
+async function wildAction(action) {
+  if (!wildState) return;
+  const btns = document.querySelectorAll('#b-wild-actions button');
+  btns.forEach(b => b.disabled = true);
+  try {
+    const r = await sendWildTurn(action);
+    wildState.wildHp = r.wildHp; wildState.playerHp = r.playerHp;
+    wildState.wildMaxHp = r.wildMaxHp; wildState.playerMaxHp = r.playerMaxHp;
+    updateArenaHP();
+    appendBattleLog(r.log);
+    if (r.done) {
+      showBattleResult(r.result);
+      document.getElementById('b-wild-actions').style.display = 'none';
+      document.getElementById('b-start').disabled = false;
+      document.getElementById('b-start').textContent = '⚔️ FIGHT!';
+      wildState = null;
+      setMsg(`Encounter over! Result: ${r.result}`);
+      await loadAll();
+    } else {
+      setMsg('Choose your action: ATTACK, CATCH, or FLEE!');
+    }
+  } catch(e) { toast('Error: ' + e.message, 'err'); }
+  btns.forEach(b => b.disabled = false);
+}
+
+function updateArenaHP() {
+  if (!wildState) return;
+  const wPct = Math.max(0, Math.round(wildState.wildHp / wildState.wildMaxHp * 100));
+  const pPct = Math.max(0, Math.round(wildState.playerHp / wildState.playerMaxHp * 100));
+  const hpBar = (pct) => `<div class="hp-wrap" style="margin-top:6px"><div class="hp-fill ${pct>50?'hp-g':pct>20?'hp-y':'hp-r'}" style="width:${pct}%"></div></div>`;
+  document.getElementById('arena-p').innerHTML =
+    `<div class="arena-side-title" style="color:var(--blue)">👤 ${x(wildState.playerName)}</div>` +
+    `<div style="font-size:10px;margin-top:6px">HP: ${wildState.playerHp}/${wildState.playerMaxHp}</div>` + hpBar(pPct);
+  document.getElementById('arena-r').innerHTML =
+    `<div class="arena-side-title" style="color:var(--red)">🌿 ${x(wildState.wildName)}</div>` +
+    `<div style="font-size:10px;margin-top:6px">HP: ${wildState.wildHp}/${wildState.wildMaxHp}</div>` + hpBar(wPct);
+}
+
+function appendBattleLog(logText) {
+  const el = document.getElementById('b-log');
+  const lines = logText.split('\n').filter(l => l.trim());
+  lines.forEach(l => {
+    let line = x(l);
+    if (line.includes('uses') && line.includes('damage')) line = `<span class="bl-atk">${line}</span>`;
+    else if (line.includes('effective')) line = `<span class="bl-eff">${line}</span>`;
+    else if (line.includes('fainted') || line.includes('caught') || line.includes('lost') || line.includes('Gotcha') || line.includes('safely')) line = `<b>${line}</b>`;
+    el.innerHTML += line + '\n';
+  });
+  el.scrollTop = el.scrollHeight;
+}
+
+async function animateLog(logText, el) {
+  const lines = logText.split('\n').filter(l => l.trim());
+  for (let i = 0; i < lines.length; i++) {
+    await new Promise(res => setTimeout(res, 80));
+    let line = x(lines[i]);
+    if (line.includes('uses') && line.includes('damage')) line = `<span class="bl-atk">${line}</span>`;
+    else if (line.includes('effective')) line = `<span class="bl-eff">${line}</span>`;
+    else if (line.includes('defeated') || line.includes('Congratulations') || line.includes('lost')) line = `<b>${line}</b>`;
+    el.innerHTML += line + '\n';
+    el.scrollTop = el.scrollHeight;
+  }
+}
+
+function showBattleResult(result) {
+  const resEl = document.getElementById('b-result');
+  resEl.style.display = 'block';
+  const map = {WIN:'win',LOSE:'lose',CAUGHT:'win',FLED:'draw',DRAW:'draw'};
+  const icons = {WIN:'🏆',LOSE:'💥',CAUGHT:'🔴',FLED:'🏃',DRAW:'🤝'};
+  resEl.className = 'battle-result pbox ' + (map[result]||'draw');
+  resEl.innerHTML = `${icons[result]||'❓'} RESULT: <strong>${result}</strong>`;
+}
+
+// ── Init ──────────────────────────────────────────────────────────────────
+loadAll();
+setInterval(loadAll, 30000);
+</script>
+</body>
+</html>
+

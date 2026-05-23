@@ -14,10 +14,12 @@ public class GameService {
 
     private List<Trainer> trainerRanking;
     private Map<String, WildCreature> wildCreatureRegistry;
+    private final AuditService audit;
 
     public GameService() {
         this.trainerRanking = new ArrayList<>();
         this.wildCreatureRegistry = new HashMap<>();
+        this.audit = AuditService.getInstance();
     }
 
     // inregistrare trainer
@@ -26,6 +28,7 @@ public class GameService {
                 .anyMatch(t -> t.getName().equalsIgnoreCase(trainer.getName()));
         if (!exists) {
             trainerRanking.add(trainer);
+            audit.log("REGISTER_TRAINER");
             System.out.printf("[SERVICE] Trainer '%s' registered.%n", trainer.getName());
         } else {
             System.out.printf("[SERVICE] Trainer '%s' is already registered.%n", trainer.getName());
@@ -90,11 +93,12 @@ public class GameService {
     // lupta completa trainer vs trainer
     public String conductFullBattle(Trainer player, Trainer rival) {
         System.out.println("\n[SERVICE] Full battle...");
+        audit.log("CONDUCT_BATTLE");
         BattleManager bm = new BattleManager(player, rival);
         bm.startBattle();
         int turn = 0;
         while (!bm.isBattleOver() && turn < 20) {
-            bm.executeTurn(0); // simplu: mereu prima mutare
+            bm.executeTurn(0);
             turn++;
         }
         return bm.getResult();
@@ -104,12 +108,14 @@ public class GameService {
     public boolean useItemOnCreature(Trainer trainer, String itemName, Creature target) {
         System.out.printf("%n[SERVICE] %s uses %s on %s...%n",
                 trainer.getName(), itemName, target.getName());
+        audit.log("USE_ITEM");
         return trainer.useItem(itemName, target);
     }
 
     // vindecare echipa completa
     public void healTeam(Trainer trainer) {
         System.out.printf("%n[SERVICE] Healing team '%s'...%n", trainer.getName());
+        audit.log("HEAL_TEAM");
         trainer.healAllCreatures();
         trainer.printParty();
     }
@@ -144,6 +150,7 @@ public class GameService {
     public void encounterWildCreature(Trainer trainer, WildCreature wild, Scanner scanner) {
         System.out.printf("%n[ENCOUNTER] A wild %s appeared!%n", wild.getDescription());
         System.out.printf("  %s%n", wild);
+        audit.log("ENCOUNTER_WILD");
 
         TrainerCreature active = trainer.getActiveCreature();
         if (active == null) {
