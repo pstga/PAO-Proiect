@@ -4,7 +4,6 @@ import entities.Creature;
 import entities.WildCreature;
 
 public class Pokeball extends Item {
-
     public Pokeball(String name, int price) {
         super(name, "Catching ball", price);
     }
@@ -24,5 +23,4 @@ public class Pokeball extends Item {
         }
         return success;
     }
-
 }

@@ -5,9 +5,9 @@ public enum StatusEffect {
 
     public int damagePerTurn() {
         return switch (this) {
-            case BURN   -> 8;
+            case BURN -> 8;
             case POISON -> 12;
-            default     -> 0;
+            default -> 0;
         };
     }
 

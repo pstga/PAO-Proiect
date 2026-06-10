@@ -8,30 +8,23 @@ import enums.StatusEffect;
 import items.Pokeball;
 import items.Potion;
 import service.*;
-
 import java.io.*;
 import java.util.List;
 import java.util.Optional;
 import java.util.Scanner;
 
 public class Main {
-
-    // ────────────────────────────────────────────────────────────────────────
-    //  Servicii singleton
-    // ────────────────────────────────────────────────────────────────────────
-    private static GameService    gameService;
+    private static GameService gameService;
     private static TrainerService trainerService;
-    private static MoveService    moveService;
+    private static MoveService moveService;
     private static CreatureService creatureService;
-    private static AuditService   auditService;
+    private static AuditService auditService;
 
     public static void main(String[] args) {
-
         System.out.println("===========================================");
         System.out.println("|           POKERAIN - Pokemon Game        |");
         System.out.println("===========================================");
 
-        // ── Initializare baza de date ────────────────────────────────────────
         try {
             DatabaseInitializer.initialize();
         } catch (Exception e) {
@@ -39,29 +32,26 @@ public class Main {
             System.err.println("[WARN] Aplicatia ruleaza DOAR in modul in-memory.");
         }
 
-        // ── Instantiere servicii ─────────────────────────────────────────────
-        auditService    = AuditService.getInstance();
-        gameService     = new GameService();
-        trainerService  = TrainerService.getInstance();
-        moveService     = MoveService.getInstance();
+        auditService = AuditService.getInstance();
+        gameService = new GameService();
+        trainerService = TrainerService.getInstance();
+        moveService = MoveService.getInstance();
         creatureService = CreatureService.getInstance();
 
-        // ── Date initiale (in-memory + persistate in DB) ─────────────────────
-        Move focBlast    = new Move("FireBall",      90, 85,  5, CreatureType.FIRE,     MoveCategory.SPECIAL,   StatusEffect.BURN);
-        Move hydropump   = new Move("Hydropump",     95, 80,  5, CreatureType.WATER,    MoveCategory.SPECIAL,   StatusEffect.NONE);
-        Move thunderbolt = new Move("Thunderbolt",   80, 100, 15, CreatureType.ELECTRIC, MoveCategory.SPECIAL,  StatusEffect.PARALYSIS);
-        Move razorLeaf   = new Move("Razor Leaf",    55, 95,  25, CreatureType.GRASS,    MoveCategory.PHYSICAL,  StatusEffect.NONE);
-        Move tackle      = new Move("Tackle",         40, 100, 35, CreatureType.NORMAL,  MoveCategory.PHYSICAL,  StatusEffect.NONE);
-        Move iceBeam     = new Move("Ice Beam",       90, 100, 10, CreatureType.ICE,     MoveCategory.SPECIAL,   StatusEffect.SLEEP);
-        Move poisonSting = new Move("Poison Sting",   15, 100, 35, CreatureType.POISON,  MoveCategory.PHYSICAL,  StatusEffect.POISON);
-        Move psychic     = new Move("Brain damage",   90, 100, 10, CreatureType.PSYCHIC, MoveCategory.SPECIAL,   StatusEffect.NONE);
+        Move focBlast = new Move("FireBall", 90, 85, 5, CreatureType.FIRE, MoveCategory.SPECIAL, StatusEffect.BURN);
+        Move hydropump = new Move("Hydropump", 95, 80, 5, CreatureType.WATER, MoveCategory.SPECIAL, StatusEffect.NONE);
+        Move thunderbolt = new Move("Thunderbolt", 80, 100, 15, CreatureType.ELECTRIC, MoveCategory.SPECIAL, StatusEffect.PARALYSIS);
+        Move razorLeaf = new Move("Razor Leaf", 55, 95, 25, CreatureType.GRASS, MoveCategory.PHYSICAL, StatusEffect.NONE);
+        Move tackle = new Move("Tackle", 40, 100, 35, CreatureType.NORMAL, MoveCategory.PHYSICAL, StatusEffect.NONE);
+        Move iceBeam = new Move("Ice Beam", 90, 100, 10, CreatureType.ICE, MoveCategory.SPECIAL, StatusEffect.SLEEP);
+        Move poisonSting = new Move("Poison Sting", 15, 100, 35, CreatureType.POISON, MoveCategory.PHYSICAL, StatusEffect.POISON);
+        Move psychic = new Move("Brain damage", 90, 100, 10, CreatureType.PSYCHIC, MoveCategory.SPECIAL, StatusEffect.NONE);
 
-        // Salvam datele initiale in DB DOAR daca nu exista deja (prima rulare)
         boolean dbEmpty = true;
         try {
             dbEmpty = trainerService.findAll().isEmpty();
         } catch (Exception e) {
-            dbEmpty = false; // DB indisponibil, lucram in-memory
+            dbEmpty = false; 
         }
 
         if (dbEmpty) {
@@ -76,7 +66,6 @@ public class Main {
         } else {
             System.out.println("[DB] Date initiale deja existente in DB, skip seeding.");
         }
-
 
         TrainerCreature charmander = new TrainerCreature("Charmander", "Piscotel", 78, 52, 43, 65, 10, CreatureType.FIRE);
         charmander.addMove(focBlast); charmander.addMove(tackle);
@@ -96,7 +85,7 @@ public class Main {
         TrainerCreature alakazam = new TrainerCreature("Alakazam", "Pluaie", 65, 50, 45, 120, 15, CreatureType.PSYCHIC);
         alakazam.addMove(psychic); alakazam.addMove(tackle);
 
-        Trainer ash   = new Trainer("Ash",   3000);
+        Trainer ash = new Trainer("Ash", 3000);
         Trainer misty = new Trainer("Misty", 2500);
         Trainer brock = new Trainer("Brock", 2200);
 
@@ -104,15 +93,13 @@ public class Main {
         gameService.registerTrainer(misty);
         gameService.registerTrainer(brock);
 
-        // Mereu adaugam creaturile in echipa in-memory
-        gameService.addCreatureToTrainer(ash,   charmander);
-        gameService.addCreatureToTrainer(ash,   pikachu);
-        gameService.addCreatureToTrainer(ash,   bulbasaur);
+        gameService.addCreatureToTrainer(ash, charmander);
+        gameService.addCreatureToTrainer(ash, pikachu);
+        gameService.addCreatureToTrainer(ash, bulbasaur);
         gameService.addCreatureToTrainer(misty, squirtle);
         gameService.addCreatureToTrainer(misty, jynx);
         gameService.addCreatureToTrainer(brock, alakazam);
 
-        // Salvam trainerii si creaturile in DB DOAR la prima rulare
         if (dbEmpty) {
             try {
                 trainerService.save(ash);
@@ -120,29 +107,28 @@ public class Main {
                 trainerService.save(brock);
 
                 creatureService.saveTrainerCreature(charmander, ash.getId());
-                creatureService.saveTrainerCreature(pikachu,    ash.getId());
-                creatureService.saveTrainerCreature(bulbasaur,  ash.getId());
-                creatureService.saveTrainerCreature(squirtle,   misty.getId());
-                creatureService.saveTrainerCreature(jynx,       misty.getId());
-                creatureService.saveTrainerCreature(alakazam,   brock.getId());
+                creatureService.saveTrainerCreature(pikachu, ash.getId());
+                creatureService.saveTrainerCreature(bulbasaur, ash.getId());
+                creatureService.saveTrainerCreature(squirtle, misty.getId());
+                creatureService.saveTrainerCreature(jynx, misty.getId());
+                creatureService.saveTrainerCreature(alakazam, brock.getId());
             } catch (Exception e) {
                 System.err.println("[WARN] Date initiale nu au putut fi salvate complet in DB: " + e.getMessage());
             }
         }
 
-
-        Potion superPotion = new Potion("Super Potion", 60,  false, 700);
-        Potion fullRestore = new Potion("Full Restore",  999, true,  3000);
-        Pokeball pokeball  = new Pokeball("Poke Ball",  200);
-        Pokeball greatBall = new Pokeball("Great Ball",  600);
+        Potion superPotion = new Potion("Super Potion", 60, false, 700);
+        Potion fullRestore = new Potion("Full Restore", 999, true, 3000);
+        Pokeball pokeball = new Pokeball("Poke Ball", 200);
+        Pokeball greatBall = new Pokeball("Great Ball", 600);
 
         ash.addItem(superPotion, 5);
         ash.addItem(fullRestore, 2);
-        ash.addItem(pokeball,   10);
-        ash.addItem(greatBall,   3);
+        ash.addItem(pokeball, 10);
+        ash.addItem(greatBall, 3);
 
-        WildCreature wildEevee   = new WildCreature("Eevee",    65, 45, 40, 55, 6, CreatureType.NORMAL, 0.70);
-        WildCreature wildMagikarp= new WildCreature("Magikarp", 30, 10, 30, 80, 3, CreatureType.WATER,  0.95);
+        WildCreature wildEevee = new WildCreature("Eevee", 65, 45, 40, 55, 6, CreatureType.NORMAL, 0.70);
+        WildCreature wildMagikarp= new WildCreature("Magikarp", 30, 10, 30, 80, 3, CreatureType.WATER, 0.95);
 
         gameService.registerWildCreature(wildEevee);
         gameService.registerWildCreature(wildMagikarp);
@@ -156,7 +142,6 @@ public class Main {
             }
         }
 
-        // ── Pornire server web ────────────────────────────────────────────
         try {
             new server.PokerainServer().start();
         } catch (Exception e) {
@@ -179,8 +164,6 @@ public class Main {
             }
 
             switch (choice) {
-
-                // ── JOC ─────────────────────────────────────────────────────
                 case 1:
                     System.out.println("\n== Trainer Rankings ==");
                     gameService.printRanking();
@@ -192,7 +175,7 @@ public class Main {
                     System.out.print("Trainer name: ");
                     Trainer t2 = gameService.findTrainer(scanner.nextLine());
                     if (t2 != null) gameService.printCreaturesSortedByLevel(t2);
-                    else            System.out.println("Trainer negasit!");
+                    else System.out.println("Trainer negasit!");
                     break;
 
                 case 3:
@@ -251,7 +234,7 @@ public class Main {
                     System.out.print("Trainer name: ");
                     Trainer t7 = gameService.findTrainer(scanner.nextLine());
                     if (t7 != null) gameService.healTeam(t7);
-                    else            System.out.println("Trainer negasit!");
+                    else System.out.println("Trainer negasit!");
                     break;
 
                 case 8:
@@ -264,7 +247,6 @@ public class Main {
                     gameService.encounterWildCreature(trainerWild, randomWild, scanner);
                     break;
 
-                // ── MANAGEMENT DB ────────────────────────────────────────────
                 case 9:
                     manageTrainersMenu(scanner);
                     break;
@@ -294,10 +276,6 @@ public class Main {
         scanner.close();
     }
 
-    // ════════════════════════════════════════════════════════════════════════
-    //  MENIU PRINCIPAL
-    // ════════════════════════════════════════════════════════════════════════
-
     private static void printMainMenu() {
         System.out.println("\n╔══════════════════════════════════════╗");
         System.out.println("║         POKERAIN  –  MENIU           ║");
@@ -322,10 +300,6 @@ public class Main {
         System.out.println("╚══════════════════════════════════════╝");
         System.out.print("Alegere: ");
     }
-
-    // ════════════════════════════════════════════════════════════════════════
-    //  SUBMENIU: TRAINERI
-    // ════════════════════════════════════════════════════════════════════════
 
     private static void manageTrainersMenu(Scanner sc) {
         System.out.println("\n--- Gestionare Traineri ---");
@@ -385,10 +359,6 @@ public class Main {
         }
     }
 
-    // ════════════════════════════════════════════════════════════════════════
-    //  SUBMENIU: MUTARI
-    // ════════════════════════════════════════════════════════════════════════
-
     private static void manageMovesMenu(Scanner sc) {
         System.out.println("\n--- Gestionare Mutari ---");
         System.out.println("1. Adauga mutare noua");
@@ -405,10 +375,10 @@ public class Main {
                 case 1:
                     System.out.print("Nume mutare: ");
                     String mName = sc.nextLine();
-                    System.out.print("Power (0-250): ");    int power    = Integer.parseInt(sc.nextLine().trim());
+                    System.out.print("Power (0-250): "); int power = Integer.parseInt(sc.nextLine().trim());
                     System.out.print("Accuracy (0-100): "); int accuracy = Integer.parseInt(sc.nextLine().trim());
-                    System.out.print("PP: ");               int pp       = Integer.parseInt(sc.nextLine().trim());
-                    System.out.print("Tip (ex: FIRE): ");   CreatureType mType = CreatureType.valueOf(sc.nextLine().toUpperCase());
+                    System.out.print("PP: "); int pp = Integer.parseInt(sc.nextLine().trim());
+                    System.out.print("Tip (ex: FIRE): "); CreatureType mType = CreatureType.valueOf(sc.nextLine().toUpperCase());
                     System.out.print("Categorie (PHYSICAL/SPECIAL/STATUS): ");
                     MoveCategory cat = MoveCategory.valueOf(sc.nextLine().toUpperCase());
                     System.out.print("Side effect (NONE/BURN/POISON/PARALYSIS/SLEEP): ");
@@ -449,10 +419,6 @@ public class Main {
         }
     }
 
-    // ════════════════════════════════════════════════════════════════════════
-    //  SUBMENIU: CREATURI
-    // ════════════════════════════════════════════════════════════════════════
-
     private static void manageCreaturesMenu(Scanner sc) {
         System.out.println("\n--- Gestionare Creaturi ---");
         System.out.println("1. Lista creaturi trainer (din DB)");
@@ -479,12 +445,12 @@ public class Main {
                         System.out.printf("[id=%-3d] %s%n", c.getId(), c));
                     break;
                 case 3:
-                    System.out.print("Nume: ");         String wName = sc.nextLine();
-                    System.out.print("Max HP: ");       int wHp   = Integer.parseInt(sc.nextLine().trim());
-                    System.out.print("Attack: ");       int wAtk  = Integer.parseInt(sc.nextLine().trim());
-                    System.out.print("Defense: ");      int wDef  = Integer.parseInt(sc.nextLine().trim());
-                    System.out.print("Speed: ");        int wSpd  = Integer.parseInt(sc.nextLine().trim());
-                    System.out.print("Level: ");        int wLvl  = Integer.parseInt(sc.nextLine().trim());
+                    System.out.print("Nume: "); String wName = sc.nextLine();
+                    System.out.print("Max HP: "); int wHp = Integer.parseInt(sc.nextLine().trim());
+                    System.out.print("Attack: "); int wAtk = Integer.parseInt(sc.nextLine().trim());
+                    System.out.print("Defense: "); int wDef = Integer.parseInt(sc.nextLine().trim());
+                    System.out.print("Speed: "); int wSpd = Integer.parseInt(sc.nextLine().trim());
+                    System.out.print("Level: "); int wLvl = Integer.parseInt(sc.nextLine().trim());
                     System.out.print("Tip (ex: FIRE): "); CreatureType wType = CreatureType.valueOf(sc.nextLine().toUpperCase());
                     System.out.print("Catch rate (0.0-1.0): "); double wCr = Double.parseDouble(sc.nextLine().trim());
                     WildCreature newWild = new WildCreature(wName, wHp, wAtk, wDef, wSpd, wLvl, wType, wCr);
@@ -516,10 +482,6 @@ public class Main {
             System.out.println("Input invalid: " + e.getMessage());
         }
     }
-
-    // ════════════════════════════════════════════════════════════════════════
-    //  VIZUALIZARE AUDIT
-    // ════════════════════════════════════════════════════════════════════════
 
     private static void viewAuditLog() {
         System.out.println("\n== Audit Log (audit.csv) ==");

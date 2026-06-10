@@ -1,4 +1,4 @@
-// fiecare mutare din battle: iar mi am blestemat zilele noroc ca mi plac pokemonii
+
 package entities;
 
 import enums.CreatureType;
@@ -6,15 +6,15 @@ import enums.MoveCategory;
 import enums.StatusEffect;
 
 public class Move {
-    private int id; // id din baza de date
+    private int id; 
     private String name;
     private int power;
-    private int accuracy;      // 0–100
-    private int pp;            // puncte ramase
+    private int accuracy; 
+    private int pp; 
     private int maxPp;
     private CreatureType type;
     private MoveCategory category;
-    private StatusEffect sideEffect; // side effect, poate sa nu existe
+    private StatusEffect sideEffect; 
 
     public Move(String name, int power, int accuracy, int pp, CreatureType type, MoveCategory category,
                 StatusEffect sideEffect) {
@@ -27,8 +27,6 @@ public class Move {
         this.category = category;
         this.sideEffect = sideEffect;
     }
-
-    // getteri
     public int getId(){ return id; }
     public void setId(int id){ this.id = id; }
     public String getName(){ return name; }
@@ -39,7 +37,6 @@ public class Move {
     public CreatureType getType(){ return type; }
     public MoveCategory getCategory(){ return category; }
     public StatusEffect getSideEffect(){ return sideEffect; }
-
     public boolean hasPp(){ return pp > 0; }
     public void consumePp(){ if (pp > 0) pp--; }
     public void restorePp(){ pp = maxPp; }

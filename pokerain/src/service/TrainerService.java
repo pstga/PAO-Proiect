@@ -6,19 +6,14 @@ import repository.TrainerRepository;
 import java.util.List;
 import java.util.Optional;
 
-/**
- * Serviciu singleton pentru operatii CRUD asupra entitatii Trainer.
- * Fiecare operatie este inregistrata in fisierul de audit.
- */
 public class TrainerService {
-
     private static TrainerService instance;
     private final TrainerRepository repository;
-    private final AuditService      audit;
+    private final AuditService audit;
 
     private TrainerService() {
         this.repository = TrainerRepository.getInstance();
-        this.audit      = AuditService.getInstance();
+        this.audit = AuditService.getInstance();
     }
 
     public static TrainerService getInstance() {
@@ -28,16 +23,12 @@ public class TrainerService {
         return instance;
     }
 
-    // ── CREATE ──────────────────────────────────────────────────────────────
-
     public Trainer save(Trainer trainer) {
         Trainer saved = repository.save(trainer);
         audit.log("REGISTER_TRAINER");
         System.out.printf("[DB] Trainer '%s' salvat cu id=%d.%n", saved.getName(), saved.getId());
         return saved;
     }
-
-    // ── READ ─────────────────────────────────────────────────────────────────
 
     public Optional<Trainer> findById(int id) {
         audit.log("READ_TRAINER_BY_ID");
@@ -54,16 +45,12 @@ public class TrainerService {
         return repository.findByName(name);
     }
 
-    // ── UPDATE ───────────────────────────────────────────────────────────────
-
     public Trainer update(Trainer trainer) {
         Trainer updated = repository.update(trainer);
         audit.log("UPDATE_TRAINER");
         System.out.printf("[DB] Trainer '%s' actualizat.%n", updated.getName());
         return updated;
     }
-
-    // ── DELETE ───────────────────────────────────────────────────────────────
 
     public void delete(int id) {
         repository.delete(id);

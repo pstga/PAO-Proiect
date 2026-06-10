@@ -8,12 +8,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
-/**
- * Repository singleton pentru entitatea Trainer.
- * Expune operatii CRUD si cautare dupa nume.
- */
 public class TrainerRepository implements GenericRepository<Trainer> {
-
     private static TrainerRepository instance;
     private final Connection connection;
 
@@ -27,8 +22,6 @@ public class TrainerRepository implements GenericRepository<Trainer> {
         }
         return instance;
     }
-
-    // ── CREATE ──────────────────────────────────────────────────────────────
 
     @Override
     public Trainer save(Trainer trainer) {
@@ -48,8 +41,6 @@ public class TrainerRepository implements GenericRepository<Trainer> {
         }
     }
 
-    // ── READ ─────────────────────────────────────────────────────────────────
-
     @Override
     public Optional<Trainer> findById(int id) {
         String sql = "SELECT * FROM trainers WHERE id = ?";
@@ -65,10 +56,10 @@ public class TrainerRepository implements GenericRepository<Trainer> {
 
     @Override
     public List<Trainer> findAll() {
-        String sql = "SELECT * FROM trainers ORDER BY name";
+        String sql = "SELECT * FROM trainers ORDER BY id";
         List<Trainer> list = new ArrayList<>();
         try (Statement stmt = connection.createStatement();
-             ResultSet rs   = stmt.executeQuery(sql)) {
+             ResultSet rs = stmt.executeQuery(sql)) {
             while (rs.next()) list.add(mapRow(rs));
         } catch (SQLException e) {
             throw new RuntimeException("Eroare la listarea trainerilor: " + e.getMessage(), e);
@@ -88,8 +79,6 @@ public class TrainerRepository implements GenericRepository<Trainer> {
         return Optional.empty();
     }
 
-    // ── UPDATE ───────────────────────────────────────────────────────────────
-
     @Override
     public Trainer update(Trainer trainer) {
         String sql = "UPDATE trainers SET name = ?, money = ? WHERE id = ?";
@@ -104,8 +93,6 @@ public class TrainerRepository implements GenericRepository<Trainer> {
         }
     }
 
-    // ── DELETE ───────────────────────────────────────────────────────────────
-
     @Override
     public void delete(int id) {
         String sql = "DELETE FROM trainers WHERE id = ?";
@@ -116,8 +103,6 @@ public class TrainerRepository implements GenericRepository<Trainer> {
             throw new RuntimeException("Eroare la stergerea trainerului: " + e.getMessage(), e);
         }
     }
-
-    // ── Mapare ResultSet → Trainer ───────────────────────────────────────────
 
     private Trainer mapRow(ResultSet rs) throws SQLException {
         Trainer t = new Trainer(rs.getString("name"), rs.getInt("money"));

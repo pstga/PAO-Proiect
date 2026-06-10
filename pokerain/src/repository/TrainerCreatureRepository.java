@@ -10,12 +10,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
-/**
- * Repository singleton pentru entitatea TrainerCreature.
- * Expune CRUD + cautare dupa trainer_id.
- */
 public class TrainerCreatureRepository implements GenericRepository<TrainerCreature> {
-
     private static TrainerCreatureRepository instance;
     private final Connection connection;
 
@@ -30,14 +25,6 @@ public class TrainerCreatureRepository implements GenericRepository<TrainerCreat
         return instance;
     }
 
-    // ── CREATE ──────────────────────────────────────────────────────────────
-
-    /**
-     * Salveaza o creatura legata de un trainer.
-     *
-     * @param creature  creatura de salvat
-     * @param trainerId ID-ul trainerului proprietar
-     */
     public TrainerCreature save(TrainerCreature creature, int trainerId) {
         String sql =
             "INSERT INTO trainer_creatures" +
@@ -46,17 +33,17 @@ public class TrainerCreatureRepository implements GenericRepository<TrainerCreat
             " VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)";
         try (PreparedStatement ps =
                      connection.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
-            ps.setInt(1,    trainerId);
+            ps.setInt(1, trainerId);
             ps.setString(2, creature.getName());
             ps.setString(3, creature.getNickname());
-            ps.setInt(4,    creature.getMaxHp());
-            ps.setInt(5,    creature.getHp());
-            ps.setInt(6,    creature.getAttack());
-            ps.setInt(7,    creature.getDefense());
-            ps.setInt(8,    creature.getSpeed());
-            ps.setInt(9,    creature.getLevel());
-            ps.setInt(10,   creature.getExperience());
-            ps.setInt(11,   creature.getLoyalty());
+            ps.setInt(4, creature.getMaxHp());
+            ps.setInt(5, creature.getHp());
+            ps.setInt(6, creature.getAttack());
+            ps.setInt(7, creature.getDefense());
+            ps.setInt(8, creature.getSpeed());
+            ps.setInt(9, creature.getLevel());
+            ps.setInt(10, creature.getExperience());
+            ps.setInt(11, creature.getLoyalty());
             ps.setString(12, creature.getType().name());
             ps.setString(13, creature.getStatusEffect().name());
             ps.executeUpdate();
@@ -68,13 +55,10 @@ public class TrainerCreatureRepository implements GenericRepository<TrainerCreat
         }
     }
 
-    /** Salveaza fara trainer_id (trainer_id = 0). */
     @Override
     public TrainerCreature save(TrainerCreature creature) {
         return save(creature, 0);
     }
-
-    // ── READ ─────────────────────────────────────────────────────────────────
 
     @Override
     public Optional<TrainerCreature> findById(int id) {
@@ -91,10 +75,10 @@ public class TrainerCreatureRepository implements GenericRepository<TrainerCreat
 
     @Override
     public List<TrainerCreature> findAll() {
-        String sql = "SELECT * FROM trainer_creatures ORDER BY level DESC";
+        String sql = "SELECT * FROM trainer_creatures ORDER BY id";
         List<TrainerCreature> list = new ArrayList<>();
         try (Statement stmt = connection.createStatement();
-             ResultSet rs   = stmt.executeQuery(sql)) {
+             ResultSet rs = stmt.executeQuery(sql)) {
             while (rs.next()) list.add(mapRow(rs));
         } catch (SQLException e) {
             throw new RuntimeException("Eroare la listarea creaturilor: " + e.getMessage(), e);
@@ -102,9 +86,8 @@ public class TrainerCreatureRepository implements GenericRepository<TrainerCreat
         return list;
     }
 
-    /** Returneaza toate creaturile unui trainer, sortate descrescator dupa nivel. */
     public List<TrainerCreature> findByTrainerId(int trainerId) {
-        String sql = "SELECT * FROM trainer_creatures WHERE trainer_id = ? ORDER BY level DESC";
+        String sql = "SELECT * FROM trainer_creatures WHERE trainer_id = ? ORDER BY id";
         List<TrainerCreature> list = new ArrayList<>();
         try (PreparedStatement ps = connection.prepareStatement(sql)) {
             ps.setInt(1, trainerId);
@@ -116,8 +99,6 @@ public class TrainerCreatureRepository implements GenericRepository<TrainerCreat
         return list;
     }
 
-    // ── UPDATE ───────────────────────────────────────────────────────────────
-
     @Override
     public TrainerCreature update(TrainerCreature creature) {
         String sql =
@@ -125,27 +106,25 @@ public class TrainerCreatureRepository implements GenericRepository<TrainerCreat
             " defense=?, speed=?, level=?, experience=?, loyalty=?, type=?, status_effect=?" +
             " WHERE id=?";
         try (PreparedStatement ps = connection.prepareStatement(sql)) {
-            ps.setString(1,  creature.getName());
-            ps.setString(2,  creature.getNickname());
-            ps.setInt(3,     creature.getMaxHp());
-            ps.setInt(4,     creature.getHp());
-            ps.setInt(5,     creature.getAttack());
-            ps.setInt(6,     creature.getDefense());
-            ps.setInt(7,     creature.getSpeed());
-            ps.setInt(8,     creature.getLevel());
-            ps.setInt(9,     creature.getExperience());
-            ps.setInt(10,    creature.getLoyalty());
+            ps.setString(1, creature.getName());
+            ps.setString(2, creature.getNickname());
+            ps.setInt(3, creature.getMaxHp());
+            ps.setInt(4, creature.getHp());
+            ps.setInt(5, creature.getAttack());
+            ps.setInt(6, creature.getDefense());
+            ps.setInt(7, creature.getSpeed());
+            ps.setInt(8, creature.getLevel());
+            ps.setInt(9, creature.getExperience());
+            ps.setInt(10, creature.getLoyalty());
             ps.setString(11, creature.getType().name());
             ps.setString(12, creature.getStatusEffect().name());
-            ps.setInt(13,    creature.getId());
+            ps.setInt(13, creature.getId());
             ps.executeUpdate();
             return creature;
         } catch (SQLException e) {
             throw new RuntimeException("Eroare la actualizarea creaturii: " + e.getMessage(), e);
         }
     }
-
-    // ── DELETE ───────────────────────────────────────────────────────────────
 
     @Override
     public void delete(int id) {
@@ -157,8 +136,6 @@ public class TrainerCreatureRepository implements GenericRepository<TrainerCreat
             throw new RuntimeException("Eroare la stergerea creaturii: " + e.getMessage(), e);
         }
     }
-
-    // ── Mapare ResultSet → TrainerCreature ───────────────────────────────────
 
     private TrainerCreature mapRow(ResultSet rs) throws SQLException {
         TrainerCreature tc = new TrainerCreature(
@@ -173,10 +150,10 @@ public class TrainerCreatureRepository implements GenericRepository<TrainerCreat
         );
         tc.setId(rs.getInt("id"));
         tc.setStatusEffect(StatusEffect.valueOf(rs.getString("status_effect")));
-        // seteaza hp din DB (fallback la maxHp daca e null/0)
+
         int dbHp = rs.getInt("hp");
         if (dbHp > 0) {
-            tc.takeDamage(tc.getMaxHp() - dbHp); // reduce hp de la maxHp la valoarea din DB
+            tc.takeDamage(tc.getMaxHp() - dbHp); 
         }
         return tc;
     }

@@ -1,4 +1,4 @@
-// trainerul, adica jucatorul, adica tu, cel din consola ! 
+
 package entities;
 
 import items.Item;
@@ -6,12 +6,11 @@ import items.Item;
 import java.util.*;
 
 public class Trainer {
-
-    private int    id;   // id din baza de date (0 daca nu e salvat inca)
+    private int id; 
     private String name;
-    private List<TrainerCreature> party; // max 6, lista ordonata
-    private Map<String, Integer>  bag; // item_name -> cantitate
-    private List<Item> itemObjects; // obiectele efective
+    private List<TrainerCreature> party; 
+    private Map<String, Integer> bag; 
+    private List<Item> itemObjects; 
     private int money;
 
     public Trainer(String name, int money) {
@@ -22,7 +21,6 @@ public class Trainer {
         this.itemObjects = new ArrayList<>();
     }
 
-    // adaugam echipei
     public boolean addToParty(TrainerCreature creature) {
         if (party.size() >= 6) {
             System.out.println("  -> Team is already full! (max 6 creatures)");
@@ -33,7 +31,6 @@ public class Trainer {
         return true;
     }
 
-    // luam pokemonii in ordine basically; primul alive gasit va fi bagat in lupta automat </3
     public TrainerCreature getActiveCreature() {
         for (TrainerCreature c : party) {
             if (c.isAlive()) return c;
@@ -41,12 +38,10 @@ public class Trainer {
         return null;
     }
 
-    // daca avem creaturi in viata: lupta poate continua
     public boolean hasAliveCreatures() {
         return party.stream().anyMatch(Creature::isAlive);
     }
 
-    // heal uim toata echipa
     public void healAllCreatures() {
         System.out.printf("  -> %s Heals all creatures!%n", name);
         for (TrainerCreature c : party) {
@@ -55,16 +50,14 @@ public class Trainer {
         }
     }
 
-    // inventar: adaugam item
     public void addItem(Item item, int quantity) {
         bag.merge(item.getName(), quantity, Integer::sum);
-        // adauga itemul daca nu exista deja
+
         boolean exists = itemObjects.stream().anyMatch(i -> i.getName().equals(item.getName()));
         if (!exists) itemObjects.add(item);
         System.out.printf("  -> %s received %dx %s.%n", name, quantity, item.getName());
     }
 
-    // luam primul item din bag 
     public boolean useItem(String itemName, Creature target) {
         String actualItemName = null;
         for (String key : bag.keySet()) {
@@ -85,7 +78,6 @@ public class Trainer {
                 .findFirst().orElse(null);
         if (item == null) return false;
 
-        // daca era ultimul item de acest fel il scoatem din lista; nu l mai are :)
         boolean used = item.use(target);
         if (used) {
             bag.merge(actualItemName, -1, Integer::sum);
@@ -93,17 +85,14 @@ public class Trainer {
         }
         return used;
     }
-
-    // getteri
     public int getId(){ return id; }
     public void setId(int id){ this.id = id; }
     public String getName(){ return name; }
     public List<TrainerCreature> getParty(){ return party; }
-    public Map<String, Integer>  getBag()   { return bag; }
+    public Map<String, Integer> getBag() { return bag; }
     public List<Item> getItemObjects() { return itemObjects; }
     public int getMoney() { return money; }
     public void setMoney(int money) { this.money = money; }
-
     public void addMoney(int amount) { money += amount; }
     public boolean spendMoney(int amount) {
         if (money < amount) return false;

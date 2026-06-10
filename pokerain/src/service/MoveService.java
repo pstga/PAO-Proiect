@@ -7,19 +7,14 @@ import repository.MoveRepository;
 import java.util.List;
 import java.util.Optional;
 
-/**
- * Serviciu singleton pentru operatii CRUD asupra entitatii Move.
- * Fiecare operatie este inregistrata in fisierul de audit.
- */
 public class MoveService {
-
     private static MoveService instance;
     private final MoveRepository repository;
-    private final AuditService   audit;
+    private final AuditService audit;
 
     private MoveService() {
         this.repository = MoveRepository.getInstance();
-        this.audit      = AuditService.getInstance();
+        this.audit = AuditService.getInstance();
     }
 
     public static MoveService getInstance() {
@@ -29,16 +24,12 @@ public class MoveService {
         return instance;
     }
 
-    // ── CREATE ──────────────────────────────────────────────────────────────
-
     public Move save(Move move) {
         Move saved = repository.save(move);
         audit.log("SAVE_MOVE");
         System.out.printf("[DB] Mutare '%s' salvata cu id=%d.%n", saved.getName(), saved.getId());
         return saved;
     }
-
-    // ── READ ─────────────────────────────────────────────────────────────────
 
     public Optional<Move> findById(int id) {
         audit.log("READ_MOVE_BY_ID");
@@ -55,16 +46,12 @@ public class MoveService {
         return repository.findByType(type);
     }
 
-    // ── UPDATE ───────────────────────────────────────────────────────────────
-
     public Move update(Move move) {
         Move updated = repository.update(move);
         audit.log("UPDATE_MOVE");
         System.out.printf("[DB] Mutare '%s' actualizata.%n", updated.getName());
         return updated;
     }
-
-    // ── DELETE ───────────────────────────────────────────────────────────────
 
     public void delete(int id) {
         repository.delete(id);

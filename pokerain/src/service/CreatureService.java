@@ -15,22 +15,16 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
-/**
- * Serviciu singleton pentru operatii CRUD asupra entitatilor
- * TrainerCreature si WildCreature.
- * Fiecare operatie este inregistrata in fisierul de audit.
- */
 public class CreatureService {
-
     private static CreatureService instance;
     private final TrainerCreatureRepository trainerCreatureRepo;
-    private final WildCreatureRepository    wildCreatureRepo;
-    private final AuditService              audit;
+    private final WildCreatureRepository wildCreatureRepo;
+    private final AuditService audit;
 
     private CreatureService() {
         this.trainerCreatureRepo = TrainerCreatureRepository.getInstance();
-        this.wildCreatureRepo    = WildCreatureRepository.getInstance();
-        this.audit               = AuditService.getInstance();
+        this.wildCreatureRepo = WildCreatureRepository.getInstance();
+        this.audit = AuditService.getInstance();
     }
 
     public static CreatureService getInstance() {
@@ -39,10 +33,6 @@ public class CreatureService {
         }
         return instance;
     }
-
-    // ════════════════════════════════════════════════════════════════════════
-    //  TrainerCreature CRUD
-    // ════════════════════════════════════════════════════════════════════════
 
     public TrainerCreature saveTrainerCreature(TrainerCreature creature, int trainerId) {
         TrainerCreature saved = trainerCreatureRepo.save(creature, trainerId);
@@ -80,10 +70,6 @@ public class CreatureService {
         System.out.printf("[DB] TrainerCreature cu id=%d stearsa.%n", id);
     }
 
-    // ════════════════════════════════════════════════════════════════════════
-    //  WildCreature CRUD
-    // ════════════════════════════════════════════════════════════════════════
-
     public WildCreature saveWildCreature(WildCreature wild) {
         WildCreature saved = wildCreatureRepo.save(wild);
         audit.log("SAVE_WILD_CREATURE");
@@ -120,15 +106,9 @@ public class CreatureService {
         return wildCreatureRepo.findByCatchRateAbove(minRate);
     }
 
-    // ════════════════════════════════════════════════════════════════════════
-    //  Creature Moves (join table creature_moves)
-    // ════════════════════════════════════════════════════════════════════════
-
-    /** Atribuie o mutare unei creaturi (max 4). */
     public void assignMove(int creatureId, int moveId) {
         Connection conn = DatabaseConfig.getInstance().getConnection();
         try {
-            // verifica limita de 4 mutari
             PreparedStatement cnt = conn.prepareStatement(
                 "SELECT COUNT(*) FROM creature_moves WHERE creature_id = ?");
             cnt.setInt(1, creatureId);
@@ -137,7 +117,7 @@ public class CreatureService {
             if (rs.getInt(1) >= 4) {
                 throw new RuntimeException("Maximum 4 moves per creature!");
             }
-            // insereaza
+
             PreparedStatement ps = conn.prepareStatement(
                 "INSERT IGNORE INTO creature_moves (creature_id, move_id) VALUES (?, ?)");
             ps.setInt(1, creatureId);
@@ -149,7 +129,6 @@ public class CreatureService {
         }
     }
 
-    /** Returneaza mutarile atribuite unei creaturi. */
     public List<Move> getCreatureMoves(int creatureId) {
         Connection conn = DatabaseConfig.getInstance().getConnection();
         List<Move> moves = new ArrayList<>();
@@ -178,7 +157,6 @@ public class CreatureService {
         return moves;
     }
 
-    /** Sterge legatura creatura-mutare. */
     public void removeMove(int creatureId, int moveId) {
         Connection conn = DatabaseConfig.getInstance().getConnection();
         try (PreparedStatement ps = conn.prepareStatement(

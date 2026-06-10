@@ -4,12 +4,7 @@ import java.sql.Connection;
 import java.sql.SQLException;
 import java.sql.Statement;
 
-/**
- * Initializeaza schema bazei de date MySQL la pornirea aplicatiei.
- * Foloseste CREATE TABLE IF NOT EXISTS pentru idempotenta.
- */
 public class DatabaseInitializer {
-
     private static final String CREATE_TRAINERS =
         "CREATE TABLE IF NOT EXISTS trainers (" +
         "  id    INT AUTO_INCREMENT PRIMARY KEY," +
@@ -100,7 +95,6 @@ public class DatabaseInitializer {
         "('Super Potion', 700, 'Restores 50 HP to one Pokemon.',          'HEALING')," +
         "('Revive',      1500, 'Revives a fainted Pokemon with half HP.', 'HEALING')";
 
-    /** Creeaza toate tabelele (daca nu exista deja). */
     public static void initialize() {
         Connection conn = DatabaseConfig.getInstance().getConnection();
         try (Statement stmt = conn.createStatement()) {
@@ -112,12 +106,12 @@ public class DatabaseInitializer {
             stmt.executeUpdate(CREATE_ITEMS);
             stmt.executeUpdate(CREATE_TRAINER_ITEMS);
             stmt.executeUpdate(SEED_ITEMS);
-            // adauga coloana hp daca nu exista (pentru baze de date vechi)
+
             try {
                 stmt.executeUpdate("ALTER TABLE trainer_creatures ADD COLUMN hp INT AFTER max_hp");
                 stmt.executeUpdate("UPDATE trainer_creatures SET hp = max_hp WHERE hp IS NULL");
                 System.out.println("[DB] Coloana 'hp' adaugata la trainer_creatures.");
-            } catch (SQLException ignored) { /* coloana exista deja */ }
+            } catch (SQLException ignored) { }
             System.out.println("[DB] Schema initiata cu succes (tabele create/verificate).");
         } catch (SQLException e) {
             System.err.println("[DB] Eroare la initializarea schemei: " + e.getMessage());

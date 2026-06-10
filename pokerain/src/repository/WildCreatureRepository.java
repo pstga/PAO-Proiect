@@ -9,12 +9,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
-/**
- * Repository singleton pentru entitatea WildCreature.
- * Expune CRUD + filtrare dupa catch rate.
- */
 public class WildCreatureRepository implements GenericRepository<WildCreature> {
-
     private static WildCreatureRepository instance;
     private final Connection connection;
 
@@ -29,21 +24,22 @@ public class WildCreatureRepository implements GenericRepository<WildCreature> {
         return instance;
     }
 
-    // ── CREATE ──────────────────────────────────────────────────────────────
-
     @Override
     public WildCreature save(WildCreature wild) {
+        if (wild.getCatchRate() < 0.0 || wild.getCatchRate() > 1.0) {
+            throw new IllegalArgumentException("Catch rate must be between 0.0 and 1.0 (0% - 100%)");
+        }
         String sql =
             "INSERT INTO wild_creatures (name, max_hp, attack, defense, speed, level, type, catch_rate, is_caught)" +
             " VALUES (?,?,?,?,?,?,?,?,?)";
         try (PreparedStatement ps =
                      connection.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
             ps.setString(1, wild.getName());
-            ps.setInt(2,    wild.getMaxHp());
-            ps.setInt(3,    wild.getAttack());
-            ps.setInt(4,    wild.getDefense());
-            ps.setInt(5,    wild.getSpeed());
-            ps.setInt(6,    wild.getLevel());
+            ps.setInt(2, wild.getMaxHp());
+            ps.setInt(3, wild.getAttack());
+            ps.setInt(4, wild.getDefense());
+            ps.setInt(5, wild.getSpeed());
+            ps.setInt(6, wild.getLevel());
             ps.setString(7, wild.getType().name());
             ps.setDouble(8, wild.getCatchRate());
             ps.setBoolean(9, wild.isCaught());
@@ -55,8 +51,6 @@ public class WildCreatureRepository implements GenericRepository<WildCreature> {
             throw new RuntimeException("Eroare la salvarea creaturii salbatice: " + e.getMessage(), e);
         }
     }
-
-    // ── READ ─────────────────────────────────────────────────────────────────
 
     @Override
     public Optional<WildCreature> findById(int id) {
@@ -73,10 +67,10 @@ public class WildCreatureRepository implements GenericRepository<WildCreature> {
 
     @Override
     public List<WildCreature> findAll() {
-        String sql = "SELECT * FROM wild_creatures ORDER BY name";
+        String sql = "SELECT * FROM wild_creatures ORDER BY id";
         List<WildCreature> list = new ArrayList<>();
         try (Statement stmt = connection.createStatement();
-             ResultSet rs   = stmt.executeQuery(sql)) {
+             ResultSet rs = stmt.executeQuery(sql)) {
             while (rs.next()) list.add(mapRow(rs));
         } catch (SQLException e) {
             throw new RuntimeException("Eroare la listarea creaturilor salbatice: " + e.getMessage(), e);
@@ -84,10 +78,6 @@ public class WildCreatureRepository implements GenericRepository<WildCreature> {
         return list;
     }
 
-    /**
-     * Returneaza creaturile cu rata de prindere >= minRate,
-     * sortate descrescator dupa catch_rate.
-     */
     public List<WildCreature> findByCatchRateAbove(double minRate) {
         String sql = "SELECT * FROM wild_creatures WHERE catch_rate >= ? ORDER BY catch_rate DESC";
         List<WildCreature> list = new ArrayList<>();
@@ -101,32 +91,31 @@ public class WildCreatureRepository implements GenericRepository<WildCreature> {
         return list;
     }
 
-    // ── UPDATE ───────────────────────────────────────────────────────────────
-
     @Override
     public WildCreature update(WildCreature wild) {
+        if (wild.getCatchRate() < 0.0 || wild.getCatchRate() > 1.0) {
+            throw new IllegalArgumentException("Catch rate must be between 0.0 and 1.0 (0% - 100%)");
+        }
         String sql =
             "UPDATE wild_creatures SET name=?, max_hp=?, attack=?, defense=?," +
             " speed=?, level=?, type=?, catch_rate=?, is_caught=? WHERE id=?";
         try (PreparedStatement ps = connection.prepareStatement(sql)) {
-            ps.setString(1,  wild.getName());
-            ps.setInt(2,     wild.getMaxHp());
-            ps.setInt(3,     wild.getAttack());
-            ps.setInt(4,     wild.getDefense());
-            ps.setInt(5,     wild.getSpeed());
-            ps.setInt(6,     wild.getLevel());
-            ps.setString(7,  wild.getType().name());
-            ps.setDouble(8,  wild.getCatchRate());
+            ps.setString(1, wild.getName());
+            ps.setInt(2, wild.getMaxHp());
+            ps.setInt(3, wild.getAttack());
+            ps.setInt(4, wild.getDefense());
+            ps.setInt(5, wild.getSpeed());
+            ps.setInt(6, wild.getLevel());
+            ps.setString(7, wild.getType().name());
+            ps.setDouble(8, wild.getCatchRate());
             ps.setBoolean(9, wild.isCaught());
-            ps.setInt(10,    wild.getId());
+            ps.setInt(10, wild.getId());
             ps.executeUpdate();
             return wild;
         } catch (SQLException e) {
             throw new RuntimeException("Eroare la actualizarea creaturii salbatice: " + e.getMessage(), e);
         }
     }
-
-    // ── DELETE ───────────────────────────────────────────────────────────────
 
     @Override
     public void delete(int id) {
@@ -138,8 +127,6 @@ public class WildCreatureRepository implements GenericRepository<WildCreature> {
             throw new RuntimeException("Eroare la stergerea creaturii salbatice: " + e.getMessage(), e);
         }
     }
-
-    // ── Mapare ResultSet → WildCreature ──────────────────────────────────────
 
     private WildCreature mapRow(ResultSet rs) throws SQLException {
         WildCreature wc = new WildCreature(

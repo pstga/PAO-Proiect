@@ -4,7 +4,6 @@ import entities.Creature;
 import enums.StatusEffect;
 
 public class Potion extends Item {
-
     private int healAmount;
     private boolean curesStatus;
 
@@ -30,7 +29,6 @@ public class Potion extends Item {
         }
         return true;
     }
-
     public int getHealAmount() { return healAmount; }
     public boolean isCuresStatus() { return curesStatus; }
 }

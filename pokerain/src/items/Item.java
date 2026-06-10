@@ -5,7 +5,7 @@ import entities.Creature;
 public abstract class Item {
     protected String name;
     protected String description;
-    protected int    price;
+    protected int price;
 
     public Item(String name, String description, int price) {
         this.name = name;
@@ -14,10 +14,9 @@ public abstract class Item {
     }
 
     public abstract boolean use(Creature target);
-
     public String getName(){ return name; }
     public String getDescription(){ return description; }
-    public int    getPrice(){ return price; }
+    public int getPrice(){ return price; }
 
     @Override
     public String toString() {

@@ -11,7 +11,6 @@ import java.util.*;
 import java.util.stream.Collectors;
 
 public class GameService {
-
     private List<Trainer> trainerRanking;
     private Map<String, WildCreature> wildCreatureRegistry;
     private final AuditService audit;
@@ -22,7 +21,6 @@ public class GameService {
         this.audit = AuditService.getInstance();
     }
 
-    // inregistrare trainer
     public void registerTrainer(Trainer trainer) {
         boolean exists = trainerRanking.stream()
                 .anyMatch(t -> t.getName().equalsIgnoreCase(trainer.getName()));
@@ -35,23 +33,20 @@ public class GameService {
         }
     }
 
-    // adaugare creatura in echipa unui trainer
     public boolean addCreatureToTrainer(Trainer trainer, TrainerCreature creature) {
         return trainer.addToParty(creature);
     }
 
-    // afisare toate creaturile unui trainer, sortate dupa nivel
     public void printCreaturesSortedByLevel(Trainer trainer) {
         System.out.printf("%n[SERVICE] %s's creatures (sorted by level):%n", trainer.getName());
         TreeSet<TrainerCreature> sorted = new TreeSet<>(trainer.getParty());
-        
+
         int i = 1;
         for (TrainerCreature c : sorted) {
             System.out.printf("  %d. %s%n", i++, c);
         }
     }
 
-    // cautare creatura dupa nume
     public TrainerCreature findCreatureByName(String name) {
         System.out.printf("%n[SERVICE] Searching for creature: '%s'...%n", name);
         for (Trainer t : trainerRanking) {
@@ -67,7 +62,6 @@ public class GameService {
         return null;
     }
 
-    // cautare trainer dupa nume
     public Trainer findTrainer(String name) {
         for (Trainer t : trainerRanking) {
             if (t.getName().equalsIgnoreCase(name)) {
@@ -77,7 +71,6 @@ public class GameService {
         return null;
     }
 
-    // filtrare creaturi dupa tip
     public List<TrainerCreature> filterByType(CreatureType type) {
         System.out.printf("%n[SERVICE] Creatures of type %s:%n", type);
         List<TrainerCreature> result = trainerRanking.stream()
@@ -90,7 +83,6 @@ public class GameService {
         return result;
     }
 
-    // lupta completa trainer vs trainer
     public String conductFullBattle(Trainer player, Trainer rival) {
         System.out.println("\n[SERVICE] Full battle...");
         audit.log("CONDUCT_BATTLE");
@@ -104,7 +96,6 @@ public class GameService {
         return bm.getResult();
     }
 
-    // folosire item din inventar
     public boolean useItemOnCreature(Trainer trainer, String itemName, Creature target) {
         System.out.printf("%n[SERVICE] %s uses %s on %s...%n",
                 trainer.getName(), itemName, target.getName());
@@ -112,7 +103,6 @@ public class GameService {
         return trainer.useItem(itemName, target);
     }
 
-    // vindecare echipa completa
     public void healTeam(Trainer trainer) {
         System.out.printf("%n[SERVICE] Healing team '%s'...%n", trainer.getName());
         audit.log("HEAL_TEAM");
@@ -120,7 +110,6 @@ public class GameService {
         trainer.printParty();
     }
 
-    // clasamentul trainerilor
     public void printRanking() {
         System.out.println("\n[SERVICE] == TRAINER RANKINGS ==");
         trainerRanking.sort(Comparator.comparing(Trainer::getName));
@@ -131,22 +120,19 @@ public class GameService {
         }
     }
 
-    // registru creaturi salbatice
     public void registerWildCreature(WildCreature wc) {
         wildCreatureRegistry.put(wc.getName().toLowerCase(), wc);
         System.out.printf("[SERVICE] Wild creature '%s' registered.%n", wc.getName());
     }
 
-    // returns a random wild creature from the registry (full HP reset)
     public WildCreature getRandomWildCreature() {
         if (wildCreatureRegistry.isEmpty()) return null;
         List<WildCreature> pool = new ArrayList<>(wildCreatureRegistry.values());
         WildCreature chosen = pool.get(new Random().nextInt(pool.size()));
-        chosen.heal(chosen.getMaxHp()); // reset HP for a fresh encounter
+        chosen.heal(chosen.getMaxHp()); 
         return chosen;
     }
 
-    // wild pokemon encounter
     public void encounterWildCreature(Trainer trainer, WildCreature wild, Scanner scanner) {
         System.out.printf("%n[ENCOUNTER] A wild %s appeared!%n", wild.getDescription());
         System.out.printf("  %s%n", wild);
@@ -174,14 +160,14 @@ public class GameService {
             switch (input) {
                 case "1":
                     bm.executeTurn(0);
-                    // dupa atac wild-ul poate incerca sa fuga
+
                     if (!bm.isBattleOver() && wild.isAlive() && wild.tryFlee()) {
                         System.out.printf("  -> The wild %s fled!%n", wild.getName());
                     }
                     break;
 
                 case "2":
-                    // incerc sa folosesc pokeball daca am 
+
                     Pokeball ball = null;
                     for (Map.Entry<String, Integer> e : trainer.getBag().entrySet()) {
                         Item itm = trainer.getItemObjects().stream()
@@ -196,7 +182,7 @@ public class GameService {
                         System.out.println("  -> You have no Pokeballs left!");
                         break;
                     }
-                    // scadem din bag
+
                     trainer.getBag().merge(ball.getName(), -1, Integer::sum);
                     if (trainer.getBag().getOrDefault(ball.getName(), 0) <= 0)
                         trainer.getBag().remove(ball.getName());
@@ -215,7 +201,7 @@ public class GameService {
                     break;
 
                 case "3":
-                    // daca nu mi iese flee ul are avantaj (atac in plus) wild creature ul
+
                     if (!bm.tryFlee()) {
                         int rawDmg = Math.max(1, wild.getAttack() - active.getDefense());
                         active.takeDamage(rawDmg);
@@ -232,5 +218,4 @@ public class GameService {
         System.out.printf("[ENCOUNTER] Ended. Result: %s%n",
                 bm.getResult().isEmpty() ? "Fainted/Fled" : bm.getResult());
     }
-
 }

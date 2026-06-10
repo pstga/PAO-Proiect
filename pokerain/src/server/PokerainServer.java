@@ -15,34 +15,28 @@ import java.util.*;
 import java.util.concurrent.*;
 import java.util.regex.*;
 
-/**
- * Server HTTP embedded (com.sun.net.httpserver – inclus in JDK, fara dependente extra).
- * Expune API JSON + serveste dashboard-ul web din web/index.html.
- * Pornit automat la startup; ruleaza in parallel cu consola.
- */
 public class PokerainServer {
-
     private static final int PORT = 8080;
 
-    private final TrainerService  trainerService  = TrainerService.getInstance();
-    private final MoveService     moveService     = MoveService.getInstance();
+    private final TrainerService trainerService = TrainerService.getInstance();
+    private final MoveService moveService = MoveService.getInstance();
     private final CreatureService creatureService = CreatureService.getInstance();
-    private final AuditService    audit           = AuditService.getInstance();
+    private final AuditService audit = AuditService.getInstance();
 
     public void start() throws IOException {
         HttpServer server = HttpServer.create(new InetSocketAddress(PORT), 0);
 
-        server.createContext("/api/trainers",  this::handleTrainers);
-        server.createContext("/api/moves",     this::handleMoves);
+        server.createContext("/api/trainers", this::handleTrainers);
+        server.createContext("/api/moves", this::handleMoves);
         server.createContext("/api/creatures", this::handleCreatures);
-        server.createContext("/api/wild",      this::handleWild);
-        server.createContext("/api/audit",     this::handleAudit);
-        server.createContext("/api/battle",    this::handleBattle);
-        server.createContext("/api/heal",      this::handleHeal);
-        server.createContext("/api/cmoves",    this::handleCreatureMoves);
-        server.createContext("/api/shop",      this::handleShop);
+        server.createContext("/api/wild", this::handleWild);
+        server.createContext("/api/audit", this::handleAudit);
+        server.createContext("/api/battle", this::handleBattle);
+        server.createContext("/api/heal", this::handleHeal);
+        server.createContext("/api/cmoves", this::handleCreatureMoves);
+        server.createContext("/api/shop", this::handleShop);
         server.createContext("/api/inventory", this::handleInventory);
-        server.createContext("/",              this::handleStatic);
+        server.createContext("/", this::handleStatic);
 
         server.setExecutor(Executors.newCachedThreadPool());
         server.start();
@@ -53,8 +47,6 @@ public class PokerainServer {
         System.out.println("[SERVER] ╚══════════════════════════════════════════════╝");
         System.out.println();
     }
-
-    // ── Static file ───────────────────────────────────────────────────────────
 
     private void handleStatic(HttpExchange ex) throws IOException {
         String path = ex.getRequestURI().getPath();
@@ -69,12 +61,10 @@ public class PokerainServer {
         send(ex, 200, bytes);
     }
 
-    // ── Trainers ──────────────────────────────────────────────────────────────
-
     private void handleTrainers(HttpExchange ex) throws IOException {
         setCors(ex);
         String method = ex.getRequestMethod();
-        String path   = ex.getRequestURI().getPath();
+        String path = ex.getRequestURI().getPath();
         if ("OPTIONS".equals(method)) { send(ex, 204, new byte[0]); return; }
 
         int id = tailId(path, "/api/trainers/");
@@ -82,7 +72,7 @@ public class PokerainServer {
         if ("GET".equals(method)) {
             if (id > 0) {
                 trainerService.findById(id).ifPresentOrElse(
-                    t  -> sendJsonQ(ex, 200, trainerJson(t)),
+                    t -> sendJsonQ(ex, 200, trainerJson(t)),
                     () -> sendJsonQ(ex, 404, "{\"error\":\"not found\"}")
                 );
             } else {
@@ -101,12 +91,10 @@ public class PokerainServer {
         }
     }
 
-    // ── Moves ─────────────────────────────────────────────────────────────────
-
     private void handleMoves(HttpExchange ex) throws IOException {
         setCors(ex);
         String method = ex.getRequestMethod();
-        String path   = ex.getRequestURI().getPath();
+        String path = ex.getRequestURI().getPath();
         if ("OPTIONS".equals(method)) { send(ex, 204, new byte[0]); return; }
 
         int id = tailId(path, "/api/moves/");
@@ -135,12 +123,10 @@ public class PokerainServer {
         }
     }
 
-    // ── Creatures ─────────────────────────────────────────────────────────────
-
     private void handleCreatures(HttpExchange ex) throws IOException {
         setCors(ex);
         String method = ex.getRequestMethod();
-        String path   = ex.getRequestURI().getPath();
+        String path = ex.getRequestURI().getPath();
         if ("OPTIONS".equals(method)) { send(ex, 204, new byte[0]); return; }
 
         if ("GET".equals(method)) {
@@ -153,18 +139,16 @@ public class PokerainServer {
         } else if ("DELETE".equals(method)) {
             int id = tailId(path, "/api/creatures/");
             if (id > 0) { creatureService.deleteTrainerCreature(id); sendJson(ex, 200, "{\"ok\":true}"); }
-            else          sendJson(ex, 400, "{\"error\":\"missing id\"}");
+            else sendJson(ex, 400, "{\"error\":\"missing id\"}");
         } else {
             sendJson(ex, 405, "{\"error\":\"method not allowed\"}");
         }
     }
 
-    // ── Wild ──────────────────────────────────────────────────────────────────
-
     private void handleWild(HttpExchange ex) throws IOException {
         setCors(ex);
         String method = ex.getRequestMethod();
-        String path   = ex.getRequestURI().getPath();
+        String path = ex.getRequestURI().getPath();
         if ("OPTIONS".equals(method)) { send(ex, 204, new byte[0]); return; }
 
         int id = tailId(path, "/api/wild/");
@@ -193,8 +177,6 @@ public class PokerainServer {
         }
     }
 
-    // ── Audit ─────────────────────────────────────────────────────────────────
-
     private void handleAudit(HttpExchange ex) throws IOException {
         setCors(ex);
         if ("OPTIONS".equals(ex.getRequestMethod())) { send(ex, 204, new byte[0]); return; }
@@ -210,7 +192,7 @@ public class PokerainServer {
                 }
             }
         }
-        // Most recent first, max 200
+
         StringBuilder sb = new StringBuilder("[");
         boolean first = true;
         int start = Math.max(0, entries.size() - 200);
@@ -223,8 +205,6 @@ public class PokerainServer {
         sb.append("]");
         sendJson(ex, 200, sb.toString());
     }
-
-    // ── Battle ────────────────────────────────────────────────────────────────
 
     private void handleBattle(HttpExchange ex) throws IOException {
         setCors(ex);
@@ -239,17 +219,16 @@ public class PokerainServer {
         try {
             if ("pvp".equals(mode)) {
                 int playerId = num(body, "playerId");
-                int rivalId  = num(body, "rivalId");
+                int rivalId = num(body, "rivalId");
                 if (playerId == rivalId) {
                     sendJson(ex, 400, "{\"error\":\"A trainer can't battle themselves!\"}"); return;
                 }
                 Trainer player = trainerService.findById(playerId).orElse(null);
-                Trainer rival  = trainerService.findById(rivalId).orElse(null);
+                Trainer rival = trainerService.findById(rivalId).orElse(null);
                 if (player == null || rival == null) {
                     sendJson(ex, 404, "{\"error\":\"Trainer not found\"}"); return;
                 }
 
-                // incarca creaturile si mutarile
                 loadTrainerForBattle(player, playerId);
                 loadTrainerForBattle(rival, rivalId);
 
@@ -257,17 +236,15 @@ public class PokerainServer {
                     sendJson(ex, 400, "{\"error\":\"Both trainers need at least 1 creature\"}"); return;
                 }
 
-                // ruleaza lupta cu captura output
                 String[] result = runBattle(player, rival);
                 audit.log("CONDUCT_BATTLE");
 
                 sendJson(ex, 200, String.format(
                     "{\"result\":\"%s\",\"log\":\"%s\",\"player\":\"%s\",\"rival\":\"%s\"}",
                     esc(result[0]), esc(result[1]), esc(player.getName()), esc(rival.getName())));
-
             } else if ("wild".equals(mode)) {
                 int trainerId = num(body, "trainerId");
-                int wildId    = num(body, "wildId");
+                int wildId = num(body, "wildId");
                 Trainer player = trainerService.findById(trainerId).orElse(null);
                 WildCreature wild = creatureService.findWildCreatureById(wildId).orElse(null);
                 if (player == null || wild == null) {
@@ -279,7 +256,6 @@ public class PokerainServer {
                     sendJson(ex, 400, "{\"error\":\"Trainer needs at least 1 creature\"}"); return;
                 }
 
-                // da mutare default wild-ului daca nu are
                 if (wild.getMoves().isEmpty()) {
                     wild.addMove(new Move("Tackle", 40, 100, 35,
                         wild.getType(), MoveCategory.PHYSICAL, StatusEffect.NONE));
@@ -292,12 +268,11 @@ public class PokerainServer {
                     "{\"result\":\"%s\",\"log\":\"%s\",\"player\":\"%s\",\"wild\":\"%s\"}",
                     esc(result[0]), esc(result[1]), esc(player.getName()), esc(wild.getName())));
             } else if ("wild-turn".equals(mode)) {
-                // lupte interactive cu creaturi salbatice (o tura per request)
                 int trainerId = num(body, "trainerId");
-                int wildId    = num(body, "wildId");
-                String action = str(body, "action"); // attack, catch, flee
-                int wHp       = num(body, "wildHp");
-                int pHp       = num(body, "playerHp");
+                int wildId = num(body, "wildId");
+                String action = str(body, "action"); 
+                int wHp = num(body, "wildHp");
+                int pHp = num(body, "playerHp");
 
                 Trainer player = trainerService.findById(trainerId).orElse(null);
                 WildCreature wild = creatureService.findWildCreatureById(wildId).orElse(null);
@@ -313,7 +288,7 @@ public class PokerainServer {
                     wild.addMove(new Move("Tackle", 40, 100, 35,
                         wild.getType(), MoveCategory.PHYSICAL, StatusEffect.NONE));
                 }
-                // prima tura: folosim maxHp
+
                 if (wHp <= 0) wHp = wild.getMaxHp();
                 if (pHp <= 0) pHp = active.getMaxHp();
 
@@ -335,7 +310,6 @@ public class PokerainServer {
                         log.append(String.format("\nWild %s fainted! You win!\n", wild.getName()));
                         result = "WIN"; done = true;
                     } else {
-                        // wild-ul contraataca
                         Move wm = wild.getMoves().get(rng.nextInt(wild.getMoves().size()));
                         double tm2 = TypeChart.getMultiplier(wm.getType(), active.getType());
                         int dmg2 = Math.max(1, (int)((wm.getPower() * wild.getAttack() * tm2) / Math.max(1, active.getDefense())));
@@ -353,7 +327,7 @@ public class PokerainServer {
                     double chance = wild.getCatchRate() * hpFactor;
                     if (rng.nextDouble() < chance) {
                         log.append(String.format("Gotcha! %s was caught!\n", wild.getName()));
-                        // verifica daca trainerul are loc in echipa (max 6)
+
                         int partySize = creatureService.findCreaturesByTrainerId(trainerId).size();
                         if (partySize >= 6) {
                             log.append("But your party is full! The creature was released.\n");
@@ -394,7 +368,6 @@ public class PokerainServer {
                     sendJson(ex, 400, "{\"error\":\"action must be attack, catch or flee\"}"); return;
                 }
 
-                // persist hp-ul creaturii in DB dupa fiecare tura
                 int hpDiff = active.getHp() - pHp;
                 if (hpDiff > 0) active.takeDamage(hpDiff);
                 else if (hpDiff < 0) active.heal(-hpDiff);
@@ -406,7 +379,6 @@ public class PokerainServer {
                     "\"playerHp\":%d,\"playerMaxHp\":%d,\"wildName\":\"%s\",\"playerName\":\"%s\"}",
                     esc(log.toString()), esc(result), done, wHp, wild.getMaxHp(),
                     pHp, active.getMaxHp(), esc(wild.getName()), esc(active.getNickname())));
-
             } else {
                 sendJson(ex, 400, "{\"error\":\"mode must be pvp, wild or wild-turn\"}");
             }
@@ -455,8 +427,6 @@ public class PokerainServer {
         return runBattle(player, wild);
     }
 
-    // ── Heal ──────────────────────────────────────────────────────────────────
-
     private void handleHeal(HttpExchange ex) throws IOException {
         setCors(ex);
         if ("OPTIONS".equals(ex.getRequestMethod())) { send(ex, 204, new byte[0]); return; }
@@ -479,15 +449,12 @@ public class PokerainServer {
         sendJson(ex, 200, String.format("{\"ok\":true,\"healed\":%d}", creatures.size()));
     }
 
-    // ── Creature Moves ────────────────────────────────────────────────────────
-
     private void handleCreatureMoves(HttpExchange ex) throws IOException {
         setCors(ex);
         String method = ex.getRequestMethod();
-        String path   = ex.getRequestURI().getPath();
+        String path = ex.getRequestURI().getPath();
         if ("OPTIONS".equals(method)) { send(ex, 204, new byte[0]); return; }
 
-        // /api/cmoves/123 sau /api/cmoves/123/456
         String[] parts = path.replace("/api/cmoves/", "").split("/");
         int creatureId = 0;
         int moveId = 0;
@@ -521,8 +488,6 @@ public class PokerainServer {
         }
     }
 
-    // ── JSON serializers ──────────────────────────────────────────────────────
-
     private String trainerJson(Trainer t) {
         return String.format("{\"id\":%d,\"name\":\"%s\",\"money\":%d}",
                 t.getId(), esc(t.getName()), t.getMoney());
@@ -555,15 +520,12 @@ public class PokerainServer {
             w.getAttack(), w.getDefense(), w.getSpeed(),
             w.getType(), w.getCatchRate(), w.isCaught());
     }
-
     @FunctionalInterface private interface Fn<T> { String apply(T t); }
     private <T> String arr(List<T> list, Fn<T> fn) {
         StringBuilder sb = new StringBuilder("[");
         for (int i = 0; i < list.size(); i++) { if (i > 0) sb.append(","); sb.append(fn.apply(list.get(i))); }
         return sb.append("]").toString();
     }
-
-    // ── HTTP helpers ──────────────────────────────────────────────────────────
 
     private void sendJson(HttpExchange ex, int code, String json) throws IOException {
         byte[] b = json.getBytes(StandardCharsets.UTF_8);
@@ -578,7 +540,7 @@ public class PokerainServer {
         try (OutputStream os = ex.getResponseBody()) { os.write(body); }
     }
     private void setCors(HttpExchange ex) {
-        ex.getResponseHeaders().set("Access-Control-Allow-Origin",  "*");
+        ex.getResponseHeaders().set("Access-Control-Allow-Origin", "*");
         ex.getResponseHeaders().set("Access-Control-Allow-Methods", "GET,POST,DELETE,OPTIONS");
         ex.getResponseHeaders().set("Access-Control-Allow-Headers", "Content-Type");
     }
@@ -589,8 +551,6 @@ public class PokerainServer {
         String last = path.substring(path.lastIndexOf('/') + 1);
         try { return Integer.parseInt(last); } catch (NumberFormatException e) { return -1; }
     }
-
-    // ── Simple JSON parsing (no external library) ─────────────────────────────
 
     private String str(String json, String key) {
         Matcher m = Pattern.compile("\"" + key + "\"\\s*:\\s*\"([^\"]*)\"").matcher(json);
@@ -609,8 +569,6 @@ public class PokerainServer {
         return s.replace("\\", "\\\\").replace("\"", "\\\"").replace("\n","\\n").replace("\r","");
     }
 
-    // ── Shop & Inventory ─────────────────────────────────────────────────────
-
     private void handleShop(HttpExchange ex) throws IOException {
         setCors(ex);
         String method = ex.getRequestMethod();
@@ -619,7 +577,6 @@ public class PokerainServer {
         Connection conn = config.DatabaseConfig.getInstance().getConnection();
 
         if ("GET".equals(method)) {
-            // listeaza toate itemele din magazin
             try (Statement stmt = conn.createStatement();
                  ResultSet rs = stmt.executeQuery("SELECT * FROM items ORDER BY category, price")) {
                 StringBuilder sb = new StringBuilder("[");
@@ -637,15 +594,13 @@ public class PokerainServer {
                 sendJson(ex, 500, "{\"error\":\"" + esc(e.getMessage()) + "\"}");
             }
         } else if ("POST".equals(method)) {
-            // cumpara un item
             String body = body(ex);
             int trainerId = num(body, "trainerId");
-            int itemId    = num(body, "itemId");
-            int qty       = num(body, "quantity");
+            int itemId = num(body, "itemId");
+            int qty = num(body, "quantity");
             if (qty <= 0) qty = 1;
 
             try {
-                // obtine pretul
                 PreparedStatement ps = conn.prepareStatement("SELECT price, name FROM items WHERE id = ?");
                 ps.setInt(1, itemId);
                 ResultSet rs = ps.executeQuery();
@@ -654,18 +609,15 @@ public class PokerainServer {
                 String itemName = rs.getString("name");
                 int total = price * qty;
 
-                // verifica banii
                 Trainer t = trainerService.findById(trainerId).orElse(null);
                 if (t == null) { sendJson(ex, 404, "{\"error\":\"Trainer not found\"}"); return; }
                 if (t.getMoney() < total) {
                     sendJson(ex, 400, "{\"error\":\"Not enough money! Need " + total + " but have " + t.getMoney() + "\"}"); return;
                 }
 
-                // scade banii
                 t.setMoney(t.getMoney() - total);
                 trainerService.update(t);
 
-                // adauga in inventar
                 PreparedStatement upsert = conn.prepareStatement(
                     "INSERT INTO trainer_items (trainer_id, item_id, quantity) VALUES (?, ?, ?) " +
                     "ON DUPLICATE KEY UPDATE quantity = quantity + ?");

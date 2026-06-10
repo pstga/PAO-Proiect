@@ -4,22 +4,15 @@ import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.SQLException;
 
-/**
- * Singleton care gestioneaza conexiunea JDBC la MySQL.
- * Credentialele pot fi modificate mai jos.
- */
 public class DatabaseConfig {
-
     private static DatabaseConfig instance;
     private Connection connection;
 
-    // ── Configuratie conexiune ──────────────────────────────────────────────
     private static final String URL =
             "jdbc:mysql://localhost:3306/pokerain_db" +
             "?useSSL=false&serverTimezone=UTC&allowPublicKeyRetrieval=true";
-    private static final String USER     = "root";
+    private static final String USER = "root";
     private static final String PASSWORD = "rain";
-    // ────────────────────────────────────────────────────────────────────────
 
     private DatabaseConfig() {
         try {
@@ -42,7 +35,6 @@ public class DatabaseConfig {
         return instance;
     }
 
-    /** Returneaza conexiunea activa; o reface daca a fost inchisa. */
     public Connection getConnection() {
         try {
             if (connection == null || connection.isClosed()) {

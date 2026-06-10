@@ -3,15 +3,14 @@ package entities;
 import enums.CreatureType;
 
 public class TrainerCreature extends Creature {
-
     private String nickname;
-    private int    loyalty;     // 0–255
+    private int loyalty; 
 
     public TrainerCreature(String name, String nickname, int maxHp, int attack,
                            int defense, int speed, int level, CreatureType type) {
         super(name, maxHp, attack, defense, speed, level, type);
         this.nickname = (nickname != null && !nickname.isEmpty()) ? nickname : name;
-        this.loyalty  = 70;
+        this.loyalty = 70;
     }
 
     @Override
@@ -32,17 +31,14 @@ public class TrainerCreature extends Creature {
         return String.format("Trainer creature: %s (%s) | Loyalty: %d/255", nickname, name, loyalty);
     }
 
-    // bonus de atac!
     public double getLoyaltyBonus() {
         return 1.0 + (loyalty / 255.0) * 0.20;
     }
-
     public String getNickname() { return nickname; }
-    public int getLoyalty()  { return loyalty; }
-
+    public int getLoyalty() { return loyalty; }
     public void setNickname(String nickname) { this.nickname = nickname; }
-    public void increaseLoyalty(int amount)  { loyalty = Math.min(255, loyalty + amount); }
-    public void decreaseLoyalty(int amount)  { loyalty = Math.max(0,   loyalty - amount); }
+    public void increaseLoyalty(int amount) { loyalty = Math.min(255, loyalty + amount); }
+    public void decreaseLoyalty(int amount) { loyalty = Math.max(0, loyalty - amount); }
 
     @Override
     public String toString() {

@@ -11,7 +11,6 @@ import java.util.List;
 import java.util.Random;
 
 public class BattleManager {
-
     private Trainer player;
     private Object opponent;
     private Random rng;
@@ -30,7 +29,6 @@ public class BattleManager {
         System.out.println(" Start Fight!");
     }
 
-    // logica unui turn in lupta; playerul incepe, move ul e ales random
     public void executeTurn(int moveIndex) {
         if (battleOver) return;
 
@@ -50,17 +48,15 @@ public class BattleManager {
             }
         }
 
-        // daca unul din pokemoni e mort/ daca nu mai are pokemoni
         checkBattleEnd();
     }
 
-    // dam damage + calculam exact cat damage dam :)
     private void doAttack(Creature attacker, Creature defender, Move move) {
         int damage = calculateDamage(attacker, defender, move);
         defender.takeDamage(damage);
         System.out.printf("  Fight: %s uses %s and deals %d damage to %s!%n",
                 attacker.getName(), move.getName(), damage, defender.getName());
-                
+
         double typeMultiplier = TypeChart.getMultiplier(move.getType(), defender.getType());
         String eff = TypeChart.effectiveness(typeMultiplier);
         if (!eff.isEmpty()) {
@@ -68,15 +64,14 @@ public class BattleManager {
         }
     }
 
-    // formula: (power * attack * loyalty * multiplier) / defense
     public int calculateDamage(Creature attacker, Creature defender, Move move) {
         double actualAttack = attacker.getAttack();
         if (attacker instanceof TrainerCreature tc) {
             actualAttack *= tc.getLoyaltyBonus();
         }
-        
+
         double typeMultiplier = TypeChart.getMultiplier(move.getType(), defender.getType());
-        
+
         int damage = (int) ((move.getPower() * actualAttack * typeMultiplier) / Math.max(1, defender.getDefense()));
         return Math.max(1, damage);
     }
@@ -94,7 +89,6 @@ public class BattleManager {
         return success;
     }
 
-    // 50% sansa sa scapi; daca nu reusesti, lupta continua
     public boolean tryFlee() {
         if (rng.nextBoolean()) {
             System.out.println("  -> Escape successful!");
@@ -134,7 +128,6 @@ public class BattleManager {
         if (opponent instanceof Trainer t) return t.getActiveCreature();
         return null;
     }
-
     public boolean isBattleOver() { return battleOver; }
     public String getResult() { return result; }
 }

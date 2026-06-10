@@ -1,5 +1,4 @@
-// pokemonii: pot fi trained sau wild; au diverse statusuri 
-// am innebunit cand am vazut cate chestii trebuie sa iau in considerare tbh 
+
 package entities;
 
 import enums.CreatureType;
@@ -9,8 +8,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 public abstract class Creature implements Comparable<Creature> {
-
-    protected int id; // id din baza de date (0 daca nu e salvat inca)
+    protected int id; 
 
     protected String name;
     protected int hp;
@@ -42,16 +40,13 @@ public abstract class Creature implements Comparable<Creature> {
     public abstract void levelUp();
     public abstract String getDescription();
 
-    // logica: nu poate sa aiba hp pe minus 
     public void takeDamage(int amount) {
         hp = Math.max(0, hp - amount);
     }
 
-    // logica: nu poate sa aiba mai mult decat maxHp
     public void heal(int amount) {
         hp = Math.min(maxHp, hp + amount);
     }
-
     public boolean isAlive() { return hp > 0; }
 
     public void addMove(Move move) {
@@ -65,7 +60,6 @@ public abstract class Creature implements Comparable<Creature> {
         }
     }
 
-    // logica: statusul isi face efectul la fiecare turn
     public void tickStatus() {
         int dmg = statusEffect.damagePerTurn();
         if (dmg > 0) {
@@ -84,10 +78,8 @@ public abstract class Creature implements Comparable<Creature> {
 
     @Override
     public int compareTo(Creature other) {
-        return Integer.compare(other.level, this.level); // sort desc dupa nivel
+        return Integer.compare(other.level, this.level); 
     }
-
-    // getteri + setteri
     public int getId(){ return id; }
     public void setId(int id){ this.id = id; }
     public String getName(){ return name; }
@@ -101,8 +93,6 @@ public abstract class Creature implements Comparable<Creature> {
     public CreatureType getType(){ return type; }
     public StatusEffect getStatusEffect(){ return statusEffect; }
     public List<Move> getMoves(){ return moves; }
-
-    // easter egg: mi a mancat zilele asta; ar trbui sa pun pe git in readme cum aratau notitele mele cand am fc asta :)))
     public void setStatusEffect(StatusEffect s) { this.statusEffect = s; }
 
     @Override
